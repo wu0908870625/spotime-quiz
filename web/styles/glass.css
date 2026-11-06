@@ -1,0 +1,67 @@
+/* 相機螢幕的玻璃反光（10-02 Jimmy：螢幕也要有跟著陀螺儀走的反光，像真的相機）。
+   - 只用 screen 混色：只會把暗的地方提亮一點點，亮的地方（臉、貼片）幾乎不變，自拍照看起來不受影響。
+   - 兩層：一道斜的寬光帶（像窗戶的倒影）＋左上角一團很淡的散光。
+     跟機身反光一樣吃 tilt.js 的 --tilt-k（左右）、--tilt-kx（上下），手機一斜，光帶往反方向滑。
+     手機不動時光也會自己慢慢走，跟機身反光同一個節奏（同一盞燈）。
+   - 按下快門那一下反光退掉：拍下來的是照片，照片上沒有玻璃。前後一比，像真的用相機拍。
+   - 修貼片（相機拉近）時也退掉，手指拖貼片要看清楚。 */
+.lcd__glass {
+  position: absolute;
+  inset: 0;
+  z-index: 6;                /* 在照片、HUD、快門簾上面：玻璃本來就在最外層 */
+  overflow: hidden;
+  pointer-events: none;
+  border-radius: inherit;
+  mix-blend-mode: screen;
+  transition: opacity 260ms var(--ease-out);
+}
+.lcd__glass::before,
+.lcd__glass::after {
+  content: "";
+  position: absolute;
+  translate: calc(var(--tilt-k, 0) * -34%) calc(var(--tilt-kx, 0) * 22%);
+  transition: translate 300ms ease-out;
+}
+/* 斜光帶：一寬一窄兩條，像窗框的倒影。10-02 第二版（Jimmy：太明顯）：最亮只剩 8% 白 */
+.lcd__glass::before {
+  inset: -40% -60%;
+  background: linear-gradient(118deg,
+    rgba(255, 255, 255, 0) 37%,
+    rgba(255, 255, 255, .08) 42.5%,
+    rgba(255, 255, 255, .06) 46%,
+    rgba(255, 255, 255, .015) 47.5%,
+    rgba(255, 255, 255, .015) 49.5%,
+    rgba(255, 255, 255, .05) 50.5%,
+    rgba(255, 255, 255, 0) 54%);
+  animation: lcd-glass-band 14s ease-in-out infinite alternate;
+}
+/* 左上角的散光 */
+.lcd__glass::after {
+  left: -30%;
+  top: -35%;
+  width: 90%;
+  height: 80%;
+  background: radial-gradient(closest-side, rgba(255, 255, 255, .06), rgba(255, 255, 255, 0));
+  animation: lcd-glass-spot 23s ease-in-out infinite;
+}
+/* 手機不動，光也會自己慢慢走（10-02 Jimmy）。週期、方向跟機身反光（camera.css 的 cam-sheen-band／spot）
+   一樣：同一盞燈照在機身和玻璃上，兩邊的光一起走，才像同一個房間 */
+@keyframes lcd-glass-band {
+  from { transform: translateX(-16%); }
+  to   { transform: translateX(16%); }
+}
+@keyframes lcd-glass-spot {
+  0%, 100% { transform: translate(-10%, -8%); }
+  25%      { transform: translate(40%, -2%); }
+  50%      { transform: translate(34%, 30%); }
+  75%      { transform: translate(-4%, 22%); }
+}
+
+/* 拍下去了（快門到底）：照片沒有玻璃 */
+.camera.is-shot .lcd__glass,
+.quiz.is-zoomed .lcd__glass { opacity: 0; transition-duration: 80ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .lcd__glass::before,
+  .lcd__glass::after { translate: none; transition: none; animation: none; }
+}

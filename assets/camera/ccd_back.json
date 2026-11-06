@@ -1,0 +1,13 @@
+{
+ "_note": "screen 是 LCD 在 ccd_back.png 上的位置，0–1 比例，給 CSS 用",
+ "size": [
+  736,
+  991
+ ],
+ "screen": {
+  "left": 0.09918,
+  "top": 0.08779,
+  "width": 0.75951,
+  "height": 0.70636
+ }
+}

@@ -1,0 +1,174 @@
+/* 題目與選項 */
+.question {
+  width: min(100%, 420px);
+  text-align: center;
+}
+
+.question__kicker {
+  margin: 0 0 6px;
+  font-family: var(--font-latin);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: .22em;
+  color: var(--muted);
+}
+
+/* 大標題走英文短句，用拉丁字型才有 Y2K 的味道；中文退到小標題。 */
+.question__title {
+  margin: 0 0 4px;
+  font-family: var(--font-latin);
+  font-size: clamp(26px, 7.4vw, 34px);
+  font-weight: 700;
+  letter-spacing: -.01em;
+  line-height: 1.08;
+  color: var(--text);
+}
+
+.question__sub {
+  margin: 0 0 clamp(12px, 2.4vh, 20px);
+  font-size: clamp(13.5px, 3.6vw, 15px);
+  font-weight: 400;
+  letter-spacing: .02em;
+  color: var(--muted);
+}
+
+.options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+/* 銀底上的白色藥丸，對齊 mockup 的樣子 */
+.option {
+  min-height: 48px;
+  text-wrap: balance;            /* 長選項換行時兩行差不多長，不會剩一兩個字掉到第二行 */
+  padding: 12px 10px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, .93);
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: .02em;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(16, 20, 28, .1), inset 0 1px 0 rgba(255, 255, 255, .9);
+  transition: border-color var(--dur-fast) var(--ease-out),
+              background var(--dur-fast) var(--ease-out),
+              color var(--dur-fast) var(--ease-out),
+              transform var(--dur-fast) var(--ease-out);
+}
+
+.option:active { transform: scale(.97); }
+
+@media (hover: hover) {
+  .option:hover { background: #fff; border-color: rgba(20, 22, 26, .34); }
+}
+
+.option.is-picked {
+  border-color: transparent;
+  background: var(--pink);
+  color: var(--k100);
+  font-weight: 700;
+}
+
+.option:disabled { cursor: default; }
+
+.back {
+  margin-top: 14px;
+  padding: 6px 4px;
+  border: 0;
+  background: none;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.back:active { color: var(--text); }
+
+/* 換題時題目區整組淡出再淡入 */
+.question {
+  transition: opacity var(--dur-fast) var(--ease-out),
+              transform var(--dur-fast) var(--ease-out);
+}
+
+.question.is-swapping {
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+/* 回上一題往反方向（09-30 專家 B4：進出同一條路徑，回頭就反著走） */
+.question.is-swapping.is-back { transform: translateY(-6px); }
+
+/* 回上一題時，原本選的那個留一圈粉紅框，不填色——看得出上次選什麼，但還沒選 */
+.option.is-prev {
+  border-color: var(--pink);
+  box-shadow: 0 0 0 1.5px var(--pink), 0 1px 2px rgba(16, 20, 28, .1);
+}
+
+/* 測驗區塊本身，結果頁出現時整塊收起來 */
+.quiz {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(12px, 3vh, 26px);
+  width: 100%;
+}
+
+.quiz.is-off { display: none; }
+
+@media (max-height: 760px) and (max-width: 879px) {
+  .back { margin-top: 8px; }
+  .question__title { font-size: clamp(24px, 6.8vw, 30px); }
+}
+
+/* 桌機：手機版在寬螢幕上只有中間一條有東西，兩側全空。
+   這裡改成左右兩欄，相機放大、題目靠左讀，整組垂直置中。 */
+@media (min-width: 880px) and (min-height: 560px) {
+  .stage { justify-content: center; }
+
+  .quiz {
+    display: grid;
+    grid-template-columns: minmax(280px, 1fr) minmax(320px, 420px);
+    align-items: center;
+    justify-items: center;
+    gap: clamp(36px, 6vw, 80px);
+    max-width: 1040px;
+  }
+
+  .quiz .camera {
+    justify-self: end;
+    width: min(38vw, 430px, calc(78svh * var(--body-ratio)));
+  }
+
+  .question {
+    justify-self: start;
+    text-align: left;
+    width: 100%;
+  }
+
+  .question__title { font-size: 38px; }
+  .question__sub { font-size: 15.5px; }
+  .options { gap: 12px; }
+  .option { min-height: 54px; font-size: 16px; }
+}
+
+/* 開場題：自拍是主要選項、整排；略過是一行小字 */
+.option--main,
+.option--wide { grid-column: 1 / -1; }
+.option.option--skip {
+  grid-column: 1 / -1;
+  justify-self: center;
+  min-height: 44px;
+  padding: 8px 16px;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* 選項、小標題按「|」切成的片段：片段裡不換行，只在片段之間換（config.js） */
+.phrase { white-space: nowrap; }

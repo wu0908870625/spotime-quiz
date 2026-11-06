@@ -1,0 +1,60 @@
+/* 按快門那一步停 6 秒沒動作：周圍變暗、只留快門亮（scripts/idlespot.js 寫位置）。
+   挖空是橢圓（快門細長），邊緣漸層糊開，不是一圈硬邊的洞。字是白的：粉紅這頁已經給快門的光用了 */
+.idlespot {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(ellipse var(--spot-rx, 60px) var(--spot-ry, 80px) at var(--spot-x, 90%) var(--spot-y, 60%),
+    rgba(6, 8, 12, 0) 45%, rgba(6, 8, 12, .5) 72%, rgba(6, 8, 12, .74) 100%);
+  transition: opacity 260ms var(--ease-out, ease-out);
+}
+.idlespot.is-on { opacity: 1; transition-duration: 900ms; }
+
+/* 字放在快門左邊、跟快門同高，後面一條細線拉到亮的地方 */
+.idlespot__text {
+  position: absolute;
+  margin: 0;
+  top: var(--spot-y, 60%);
+  right: calc(100vw - var(--spot-x, 90%) + var(--spot-rx, 60px) * .55);
+  translate: 0 -50%;
+  display: grid;
+  grid-template-columns: auto 32px;
+  align-items: center;
+  column-gap: 10px;
+  row-gap: 2px;
+  text-align: right;
+  color: #fff;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  white-space: nowrap;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, .55);
+  opacity: 0;
+  transform: translateX(-8px);
+  transition: opacity 200ms, transform 200ms;
+}
+.idlespot__text span { grid-column: 1; }
+.idlespot__text span + span { font-size: 14px; font-weight: 500; letter-spacing: .04em; opacity: .9; }
+/* 細線在兩行中間的高度，拉到亮的地方 */
+.idlespot__text::after {
+  content: "";
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  width: 32px;
+  height: 1px;
+  background: linear-gradient(to right, rgba(255, 255, 255, .9), rgba(255, 255, 255, 0));
+}
+.idlespot.is-on .idlespot__text {
+  opacity: 1;
+  transform: none;
+  transition: opacity 500ms 500ms, transform 500ms 500ms var(--ease-out, ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .idlespot, .idlespot__text { transition: none !important; }
+}
+
+/* 10-02 盲測：變暗時螢幕右下角的「PRESS HERE」小框跟這裡的大字疊在一起，像兩個提示。變暗時只留大字 */
+body:has(.idlespot.is-on) .lcd__cue { opacity: 0; transition: opacity 300ms; }

@@ -1,0 +1,318 @@
+/* 相機機身與 LCD。螢幕的位置比例由 tools/body_v6.py 量出來寫進這裡，
+   機身圖換掉時要一起更新（數值在 assets/camera/ccd_back_v6.json）。 */
+.camera {
+  /* 機身 v6（tools/body_v6.py，數值在 assets/camera/ccd_back_v6.json）：W800 轉直，快門在右邊；
+     10-01 螢幕和按鍵中間剪掉 50 列，螢幕佔高度從 60% 變 63% */
+  --screen-left: 16.629%;
+  --screen-top: 10.724%;
+  --screen-width: 64.397%;
+  --screen-height: 62.860%;
+  /* 螢幕開口是圓角，約 10px／螢幕 577×721px。
+     LCD 不跟著圓，照片的直角就會頂出機身的圓角，四個角看起來對不齊。
+     用百分比寫：水平 % 對寬、垂直 % 對高，兩邊才會一樣是 10px。 */
+  --screen-radius: 1.73% / 1.39%;
+  --body-ratio: 0.7812;          /* 896 / 1147 */
+
+  position: relative;
+  width: min(86vw, 370px, calc(60svh * var(--body-ratio)));
+  flex: none;
+  /* 陰影在 ::before，是一張事先模糊好的圖（不用 filter、box-shadow，理由見下面） */
+  /* 待機時慢慢晃（10-01 Jimmy：背景在動、相機不動，看起來像貼上去的圖）。
+     轉的角度很小，看起來像拿在手上，不是在漂。出片時 printfx.js 用 translate 往下退，跟這裡不衝突 */
+  transform: perspective(1100px) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
+  animation: cam-float 9s ease-in-out infinite;
+}
+/* 陰影（10-02 第二版，Jimmy：Q4 修完圖、相機縮回去時，下面閃一塊灰色方塊）：
+   box-shadow 一樣要手機每一幀重新算模糊，相機邊縮放邊 3D 轉時偶爾有一幀沒算好，就變成硬邊方塊。
+   改成 tools/camera_shadow.py 事先模糊好的圖，手機只貼圖、不算模糊。
+   圖四周多留了機身寬度的 25%（＝高度的 19.53%），所以往外推這麼多 */
+.camera::before {
+  content: "";
+  position: absolute;
+  z-index: -1;               /* .camera 有 transform＝自己一層，-1 會畫在機身圖下面、但不會掉到背景後面 */
+  inset: -19.53% -25%;
+  background: url("../assets/camera/ccd_shadow_v6.webp") center / 100% 100% no-repeat;
+  pointer-events: none;
+}
+@keyframes cam-float {
+  0%, 100% { transform: perspective(1100px) rotateY(-2.4deg) rotateX(.8deg) translateY(0); }
+  50%      { transform: perspective(1100px) rotateY(2.4deg) rotateX(-.6deg) translateY(-4px); }
+}
+/* ?demo=tilt：跟著手機斜（scripts/tilt.js 寫 --tilt-x／--tilt-y；修貼片時它會慢慢轉回正面） */
+.camera.is-tilt { animation: none; }
+.quiz.is-zoomed .camera { animation-play-state: paused; }   /* 停在當下的角度（才 2 度，拖貼片對得準），拉遠後接著晃，不會跳一下 */
+
+/* 機身反光：只畫在機身上（用機身圖當遮罩），螢幕和按鍵蓋在上面。
+   10-02 Jimmy：手機不動的時候反光也要會變。所以光源自己在走，跟相機的晃動、陀螺儀都不同步：
+     ::before 一道斜的亮帶，14 秒左右來回
+     ::after  一團柔光，23 秒繞一圈（兩個週期互質，看起來不會重複）
+   ?demo=tilt 時陀螺儀只在這上面再加一點偏移（--tilt-k 左右、--tilt-kx 上下，scripts/tilt.js），光不會停 */
+.cam-sheen {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+  -webkit-mask: url("../assets/camera/ccd_back_v6.webp") center / 100% 100% no-repeat;
+  mask: url("../assets/camera/ccd_back_v6.webp") center / 100% 100% no-repeat;
+  mix-blend-mode: soft-light;
+}
+.cam-sheen::before,
+.cam-sheen::after {
+  content: "";
+  position: absolute;
+  translate: calc(var(--tilt-k, 0) * -18%) calc(var(--tilt-kx, 0) * 14%);
+  transition: translate 300ms ease-out;
+}
+.cam-sheen::before {
+  top: 0;
+  bottom: 0;
+  left: -80%;
+  width: 260%;
+  background: linear-gradient(112deg,
+    rgba(255, 255, 255, 0) 38%, rgba(255, 255, 255, .55) 47%, rgba(255, 255, 255, .15) 52%,
+    rgba(255, 255, 255, 0) 60%);
+  animation: cam-sheen-band 14s ease-in-out infinite alternate;
+}
+.cam-sheen::after {
+  left: -20%;
+  top: -20%;
+  width: 140%;
+  height: 140%;
+  background: radial-gradient(closest-side, rgba(255, 255, 255, .42), rgba(255, 255, 255, 0) 70%);
+  animation: cam-sheen-spot 23s ease-in-out infinite;
+}
+@keyframes cam-sheen-band {
+  from { transform: translateX(-22%); }
+  to   { transform: translateX(22%); }
+}
+@keyframes cam-sheen-spot {
+  0%, 100% { transform: translate(-28%, -26%) scale(.7); }
+  25%      { transform: translate(24%, -18%) scale(.85); }
+  50%      { transform: translate(18%, 24%) scale(.7); }
+  75%      { transform: translate(-22%, 16%) scale(.9); }
+}
+
+.camera__body {
+  width: 100%;
+  height: auto;
+  pointer-events: none;
+}
+
+.lcd {
+  position: absolute;
+  left: var(--screen-left);
+  top: var(--screen-top);
+  width: var(--screen-width);
+  height: var(--screen-height);
+  overflow: hidden;
+  border-radius: var(--screen-radius);
+  container-type: inline-size;
+  background: #0b0b0d;
+  box-shadow: inset 0 0 14px rgba(0, 0, 0, .9);
+}
+
+/* 還沒選場景時的攝影棚灰底，不另外出圖 */
+.lcd.is-idle {
+  background:
+    radial-gradient(70% 55% at 50% 30%, #3a3a40 0%, #1a1a1e 55%, #0b0b0d 100%);
+}
+
+/* 圖層區。每一層都填滿螢幕，因為素材已經全部切成 4:5。 */
+.lcd__frame {
+  position: absolute;
+  inset: 0;
+}
+
+.layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity var(--dur-base) var(--ease-out);
+}
+
+.layer.is-on { opacity: 1; }
+
+.sticker {
+  position: absolute;
+  opacity: 0;
+  transform: translate(-50%, -50%) rotate(var(--roll, 0deg)) scale(.72);
+  transform-origin: center;
+  transition: opacity var(--dur-base) var(--ease-out),
+              transform var(--dur-base) var(--ease-out);
+  /* 陰影的基準是貼片自己的寬度（--size 由 preview.js 寫入），
+     跟著畫面寬度算的話貼片一縮小就會糊成一團 */
+  filter: drop-shadow(
+    calc(var(--frame-w, 300px) * var(--size, .03) * .07)
+    calc(var(--frame-w, 300px) * var(--size, .03) * .10)
+    calc(var(--frame-w, 300px) * var(--size, .03) * .16)
+    rgba(0, 0, 0, .45));
+}
+
+.sticker.is-on {
+  opacity: 1;
+  transform: translate(-50%, -50%) rotate(var(--roll, 0deg)) scale(1);
+}
+
+/* 統一顆粒，讓人物層與背景層的質感對齊 */
+.lcd__grain {
+  position: absolute;
+  inset: -20%;
+  pointer-events: none;
+  opacity: .22;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,\
+<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'>\
+<filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2'/></filter>\
+<rect width='120' height='120' filter='url(%23n)'/></svg>");
+}
+
+/* LCD 上的抬頭顯示：錄影點、剩餘題數、對焦框、日期 */
+.lcd__hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  font-family: var(--font-latin);
+  letter-spacing: .06em;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, .8);
+}
+
+.hud__rec,
+.hud__count,
+.hud__date {
+  position: absolute;
+  font-size: min(3.6cqw, 13px);
+  font-weight: 500;
+}
+
+.hud__rec {
+  left: 5%;
+  top: 4%;
+  display: flex;
+  align-items: center;
+  gap: .4em;
+  color: var(--k0);
+}
+
+.hud__rec i {
+  width: .55em;
+  height: .55em;
+  border-radius: 50%;
+  background: #ff4d4d;
+  animation: rec-blink 1.6s steps(1, end) infinite;
+}
+
+@keyframes rec-blink { 50% { opacity: .15; } }
+
+.hud__count {
+  right: 5%;
+  top: 4%;
+  color: var(--k0);
+  font-variant-numeric: tabular-nums;
+}
+
+.hud__date {
+  right: 5%;
+  bottom: 4%;
+  color: var(--amber);
+  font-weight: 700;
+}
+
+.hud__corner {
+  position: absolute;
+  width: 8%;
+  height: 6.4%;
+  border: 2px solid rgba(255, 255, 255, .85);
+}
+
+.hud__corner--tl { left: 5%;  top: 14%;    border-right: 0; border-bottom: 0; }
+.hud__corner--tr { right: 5%; top: 14%;    border-left: 0;  border-bottom: 0; }
+.hud__corner--bl { left: 5%;  bottom: 14%; border-right: 0; border-top: 0; }
+.hud__corner--br { right: 5%; bottom: 14%; border-left: 0;  border-top: 0; }
+
+/* 換場時的一下快門白光 */
+.lcd__flash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: #fff;
+  opacity: 0;
+}
+
+.lcd__flash.is-firing { animation: flash 260ms var(--ease-out); }
+
+@keyframes flash {
+  0%   { opacity: .55; }
+  100% { opacity: 0; }
+}
+
+/* Q2 選完造型、還沒選位置時的暫存槽。
+   之前是先把貼片預設貼在臉頰上，等於替使用者亂決定位置，很出戲；
+   改成貼片先「載進相機」停在畫面角落浮著，Q3 選了位置才淡到臉上。 */
+.lcd__tray {
+  position: absolute;
+  left: 5%;
+  bottom: 4%;
+  display: flex;
+  align-items: center;
+  gap: .6em;
+  padding: .3em .7em .3em .4em;
+  border: 1px solid rgba(255, 255, 255, .28);
+  border-radius: 999px;
+  background: rgba(10, 12, 16, .42);
+  backdrop-filter: blur(4px);
+  font-family: var(--font-latin);
+  font-size: min(3.2cqw, 12px);
+  letter-spacing: .12em;
+  color: var(--k0);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity var(--dur-base) var(--ease-out),
+              transform var(--dur-base) var(--ease-out);
+}
+
+.lcd__tray.is-on {
+  opacity: 1;
+  transform: none;
+}
+
+/* 貼片本身不動：它是產品，晃來晃去反而廉價。動的是旁邊的狀態文字。 */
+.tray__sticker {
+  width: 11cqw;
+  height: auto;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .5));
+}
+
+.tray__word i {
+  font-style: normal;
+  opacity: .42;
+  animation: tray-wave 2.2s ease-in-out infinite;
+}
+
+/* 一道亮度依序掃過六個字母，像機器正在讀取的狀態燈 */
+.tray__word i:nth-child(1) { animation-delay: 0ms; }
+.tray__word i:nth-child(2) { animation-delay: 90ms; }
+.tray__word i:nth-child(3) { animation-delay: 180ms; }
+.tray__word i:nth-child(4) { animation-delay: 270ms; }
+.tray__word i:nth-child(5) { animation-delay: 360ms; }
+.tray__word i:nth-child(6) { animation-delay: 450ms; }
+
+@keyframes tray-wave {
+  0%, 55%, 100% { opacity: .42; }
+  22%           { opacity: 1; }
+}
+
+/* 矮螢幕（9:16 的 405×720 就是）：相機再收一點。
+   不收的話最後兩題多了「上一題」，整頁會高出 5px，變成可以捲一小段，
+   在手機上看起來像沒對齊。 */
+@media (max-height: 760px) and (max-width: 879px) {
+  .camera { width: min(86vw, 370px, calc(55svh * var(--body-ratio))); }
+}
+/* 更矮的（iPhone Safari 網址列展開時約 660px 高）：再收一點，選項才不會被切到要捲 */
+@media (max-height: 700px) and (max-width: 879px) {
+  .camera { width: min(86vw, 370px, calc(52svh * var(--body-ratio))); }
+}

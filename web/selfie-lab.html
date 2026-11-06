@@ -1,0 +1,51 @@
+<!doctype html><meta charset=utf-8><title>selfie lab</title><body>
+<script type=module>
+const MAX = 1280;
+import { analyze, loadVision } from "./scripts/selfie/vision.js";
+import { measure, review } from "./scripts/selfie/check.js";
+import { toGray } from "./scripts/selfie/pixels.js";
+import { faceSpot, stickerSize } from "./scripts/selfie/geometry.js";
+import { composeSelfie } from "./scripts/selfie/compose.js";
+import { renderResult } from "./scripts/render.js";
+import { loadManifest } from "./scripts/layers.js";
+const manifest = await loadManifest();
+window.compose = async (name, scene, shape, position) => {
+  const img = new Image(); img.src = "_lab_faces/" + name; await img.decode();
+  const k = Math.min(1, MAX / Math.max(img.naturalWidth, img.naturalHeight));
+  const c = document.createElement("canvas"); c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+  const x = c.getContext("2d"); x.drawImage(img, 0, 0, c.width, c.height);
+  const a = await analyze(c);
+  const gray = toGray(x.getImageData(0, 0, c.width, c.height).data, c.width, c.height);
+  const m = measure(a, gray, position);
+  const t = performance.now();
+  const custom = composeSelfie(c, a, m, position, manifest.frame, 1080);
+  const out = await renderResult(manifest, { scene, shape, position }, 1080, custom);
+  return { ms: Math.round(performance.now() - t), issues: review(m).map(i => i.id), viz: out.toDataURL("image/jpeg", 0.8) };
+};
+const t0 = performance.now(); await loadVision(); window.loadMs = performance.now() - t0;
+window.run = async (name) => {
+  const img = new Image(); img.src = "_lab_faces/" + name; await img.decode();
+  const k = Math.min(1, MAX / Math.max(img.naturalWidth, img.naturalHeight));
+  const c = document.createElement("canvas"); c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+  const x = c.getContext("2d"); x.drawImage(img, 0, 0, c.width, c.height);
+  const t = performance.now(); const a = await analyze(c); const tA = performance.now() - t;
+  const gray = toGray(x.getImageData(0, 0, c.width, c.height).data, c.width, c.height);
+  const out = {};
+  for (const pos of ["cheek", "under_eye", "forehead_side", "neck"]) {
+    const m = measure(a, gray, pos); out[pos] = { m, issues: review(m).map(i => i.level + ":" + i.id) };
+  }
+  // viz: spots for all positions
+  const colors = { cheek: "#f0f", under_eye: "#0ff", forehead_side: "#ff0", neck: "#0f0" };
+  for (const pos of Object.keys(colors)) {
+    out[pos].m.faces.forEach((f, i) => { if (!f.spot) return; const r = stickerSize(a.faces[i]) / 2;
+      x.strokeStyle = colors[pos]; x.lineWidth = 3; x.beginPath(); x.arc(f.spot.x, f.spot.y, r, 0, 7); x.stroke(); });
+  }
+  const m = out.cheek.m;
+  const compact = { name, tA: Math.round(tA), n: m.faceCount, clutter: +m.clutter.toFixed(3),
+    faces: m.faces.map(f => ({ yaw: Math.round(f.yaw), pitch: Math.round(f.pitch), px: Math.round(f.widthPx), crop: f.cropped, bright: Math.round(f.brightness), sharp: Math.round(f.sharpness), occ: +f.occluded.toFixed(3),
+      skin: Object.fromEntries(["cheek","under_eye","forehead_side"].map(p => [p, +out[p].m.faces.find((_, j) => j === m.faces.indexOf(f)).spotSkin.toFixed(2)])), neck: !!out.neck.m.faces[m.faces.indexOf(f)].spot })),
+    issues: Object.fromEntries(Object.entries(out).map(([p, v]) => [p, v.issues.join(",")])) };
+  return { r: compact, viz: c.toDataURL("image/jpeg", 0.7) };
+};
+window.ready = true;
+</script>

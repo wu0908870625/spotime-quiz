@@ -1,0 +1,217 @@
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  background: var(--metal-plate, var(--silver)) fixed;
+  color: var(--text);
+  font-family: var(--font-tc);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overflow-x: hidden;
+}
+
+/* 髮絲紋：橫向的拉絲貼圖壓在銀漸層上。
+   紋路本身由 tools/make_brushed.py 產生——等距的 repeating-linear-gradient
+   只有「一種粗細、固定週期」，看久了是條紋不是金屬；貼圖裡有髮絲和刷痕兩個
+   尺度的隨機紋理，而且左右上下都能無縫接。
+
+   background-size 寫死 512×128（貼圖原尺寸的一半），是為了在 2 倍螢幕上
+   剛好一個紋理像素對一個實體像素，髮絲才不會糊掉。 */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: url("../assets/bg/brushed.png");
+  background-size: 512px 128px;
+  background-repeat: repeat;
+  opacity: var(--metal-grain, var(--brushed-strength));
+}
+
+/* 四角壓暗，銀色才有「一塊金屬板」的立體感，中央的相機也才跳得出來 */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(120% 80% at 50% 38%,
+    rgba(255, 255, 255, .35) 0%, rgba(255, 255, 255, 0) 45%,
+    rgba(28, 32, 40, .22) 100%);
+  opacity: 1;
+}
+
+/* 金屬反光：一道很寬、很淡的高光，慢慢從畫面上掃過去。
+   金屬和塑膠的差別就在這裡——塑膠的亮暗是固定的，金屬會隨視角變。
+
+   分兩層是為了讓兩種動作互不干擾：外層 .sheen 吃游標（scripts/sheen.js 寫入
+   --sheen-x/--sheen-y），內層 ::before 吃自走的來回飄移。合在一個元素上
+   會需要在 keyframes 裡動 custom property，舊的 Safari 不支援。 */
+.sheen {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transform: translate3d(var(--sheen-x, 0), var(--sheen-y, 0), 0);
+  transition: transform 700ms var(--ease-out);
+}
+
+.sheen::before {
+  content: "";
+  position: absolute;
+  /* 比視窗大一圈，飄移時邊緣才不會露出漸層的盡頭 */
+  inset: -30% -55%;
+  background: linear-gradient(101deg,
+    rgba(255, 255, 255, 0) 26%,
+    rgba(255, 255, 255, .26) 40%,
+    rgba(255, 255, 255, .52) 49%,
+    rgba(255, 255, 255, .22) 58%,
+    rgba(255, 255, 255, 0) 72%);
+  opacity: var(--metal-sheen, var(--sheen-strength));
+  will-change: transform;
+  animation: sheen-drift 19s ease-in-out infinite alternate;
+}
+
+@keyframes sheen-drift {
+  from { transform: translate3d(-16%, -4%, 0); }
+  to   { transform: translate3d(16%, 4%, 0); }
+}
+
+/* Spot Halo：Guideline 的輔助圖型。實際用法是擺在版面角落、被邊界裁掉一部分，
+   點沿著球的經緯線排列，愈靠球緣愈小，看起來是一顆立體的球。
+   圖由 tools/make_halo.py 產生，只有 alpha，顏色在這裡決定。 */
+.halo {
+  position: fixed;
+  z-index: 0;
+  aspect-ratio: 1;
+  pointer-events: none;
+  /* 受光面是桃紅、背光面轉金屬灰。桃紅直接畫在點上，
+     不用 multiply 疊一層——銀底夠亮，疊色只會變髒。 */
+  /* 桃紅要落在「畫面上看得到的那一角」。球心退到畫面外之後，
+     可見的只是元素的某個角落，光暈中心沒跟著移的話那角就是一片灰。 */
+  background: radial-gradient(circle at var(--glow-x, 36%) var(--glow-y, 32%),
+    rgba(255, 133, 196, .88) 0%,
+    rgba(182, 118, 155, .60) 34%,
+    rgba(48, 56, 68, .42) 66%,
+    rgba(48, 56, 68, .30) 100%);
+  -webkit-mask-image: url("../assets/bg/halo.png");
+  mask-image: url("../assets/bg/halo.png");
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+/* 動態版的點陣球。畫在 canvas 上、每幀重算，蓋在靜態 PNG 的位置上。
+   scripts/main.js 只有在使用者沒開「減少動態」時才會建立它，並同時把
+   body 標成 is-live 把底下的 PNG 收起來——兩層疊著會變髒。 */
+.halo-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;      /* 背景不能擋到按鈕 */
+}
+
+body.is-live .halo { display: none; }
+/* 10-06 載入速度：會跑動態版的人，一開始就把靜態 PNG 藏起來。
+   藏起來的元素瀏覽器不會去下載它的遮罩圖，省下 halo.png 這 140 KB。
+   動態版啟動失敗時 main.js 加 halo-static，PNG 才出來（那時才下載）。 */
+@media (prefers-reduced-motion: no-preference) {
+  body:not(.halo-static) .halo { display: none; }
+}
+
+/* 只露出角落一小塊弧。Guideline 的用法是點綴不是主角——球心刻意退到畫面外
+   約 0.32 倍半徑，露出來的大概是整顆球的六分之一。
+
+   PNG 是整顆球填滿方形，所以半徑 r ＝ width / 2。要讓球心退到角落外 b×r，
+   偏移量就是 -(b / 2 + 0.5) × width——別直接把 b×r 寫進 left，那是球心的位置
+   不是元素左緣的位置，第一版就是這樣算錯，球大了四倍。
+   這組數值要跟 scripts/halo-geometry.js 的 LAYOUT 對齊，改一邊就要改兩邊。 */
+.halo--a {                       /* r 58vmin, bleed 0 */
+  /* 球心退到畫面外之後，看得見的是元素的**對角**——球心在左下角，
+     露出來的就是元素的右上那一塊。第一版把光暈放在左下，結果整片是灰的。 */
+  --glow-x: 75%;
+  --glow-y: 25%;
+  left: -58vmin;
+  bottom: -58vmin;
+  width: 116vmin;
+  opacity: .92;
+}
+
+/* 右上一顆小的做平衡，轉過來讓受光面朝畫面內側 */
+.halo--b {                       /* r 34vmin, bleed .12 */
+  --glow-x: 22%;
+  --glow-y: 78%;
+  right: -38.08vmin;
+  top: -38.08vmin;
+  width: 68vmin;
+  opacity: .55;
+}
+
+/* 手機上球再壓小壓淡，不然會干擾選項 */
+@media (max-width: 879px) {
+  .halo--a {                     /* r 54vmin, bleed .06 */
+    left: -57.24vmin;
+    bottom: -57.24vmin;
+    width: 108vmin;
+    opacity: .70;
+  }
+
+  .halo--b {                     /* r 28vmin, bleed .15 */
+    right: -32.2vmin;
+    top: -32.2vmin;
+    width: 56vmin;
+    opacity: .42;
+  }
+}
+
+.stage {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(12px, 3vh, 26px);
+  min-height: 100svh;
+  padding: clamp(14px, 3vh, 28px) 16px calc(20px + env(safe-area-inset-bottom));
+}
+
+img { display: block; max-width: 100%; user-select: none; }
+
+button, input { font: inherit; color: inherit; }
+button { touch-action: manipulation; }
+
+:focus-visible {
+  outline: 2px solid #1f2430;
+  outline-offset: 3px;
+}
+
+/* 使用者開了系統的「減少動態」時，把所有動畫壓成幾乎沒有時間。
+
+   iteration-count 這行不能省。只壓時間、不壓次數的話，
+   `infinite` 的動畫會變成「每 0.01 毫秒重播一次」——不是停下來，是用畫面
+   更新率的上限狂閃。REC 紅點、背景掃光、LCD 的 logo 漂移全都會變成頻閃燈，
+   整頁看起來像被快轉。2026-09-24 Jimmy 回報的就是這個。
+
+   delay 也要歸零：否則動畫會先隱形等一段時間，開機那幾層是 opacity: 0 起手的，
+   等待期間畫面等於空白。 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    transition-duration: .01ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>你的造型貼是哪一款？｜SPOTIME</title>
+<meta name="description" content="5 題測出屬於你的 SPOTIME 造型貼。">
+<meta name="theme-color" content="#d9dce0">
+<!-- 分享預覽卡（10-06）：網址貼到 LINE、FB、Messenger 時自動出現的那張圖和標題。
+     平台只認完整網址，所以這裡寫死網域。**上正式站前要把網域換成正式網址**（backend/README.md 上線步驟）。
+     圖由 ~/Downloads/spotime-ux-test-19/og_make.mjs 從網站畫面截出來，1200×630。 -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="SPOTIME">
+<meta property="og:title" content="你的造型貼是哪一款？｜SPOTIME">
+<meta property="og:description" content="5 題測出屬於你的 SPOTIME 造型貼。">
+<meta property="og:url" content="https://spotime-quiz.spotime.workers.dev/">
+<meta property="og:image" content="https://spotime-quiz.spotime.workers.dev/assets/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="銀色相機螢幕上的合照，旁邊寫著「你的造型貼是哪一款？」">
+<meta property="og:locale" content="zh_TW">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/logo/spt_symbol.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- 10-06 載入速度：字重寫成範圍 400..700，字型表從 104 KB 降到 35 KB（壓縮後）。
+     兩種字都是可變字型，三個字重本來就是同一個檔，畫出來一樣。
+     試過 media=print 不卡畫面的寫法：WebKit 會把同一個字型檔重抓三次，反而更重，所以不用。 -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&family=Noto+Sans+TC:wght@400..700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/base.css">
+<link rel="stylesheet" href="styles/metal.css">
+<link rel="stylesheet" href="styles/loader.css">
+<link rel="stylesheet" href="styles/camera.css">
+<link rel="stylesheet" href="styles/idle.css">
+<link rel="stylesheet" href="styles/quiz.css">
+<link rel="stylesheet" href="styles/result.css">
+<link rel="stylesheet" href="styles/selfie.css">
+<link rel="stylesheet" href="styles/moodfx.css">
+<link rel="stylesheet" href="styles/camedit.css">
+<link rel="stylesheet" href="styles/shuttercue.css">
+<link rel="stylesheet" href="styles/glass.css">
+<link rel="stylesheet" href="styles/idlespot.css">
+<link rel="stylesheet" href="styles/motion.css">
+<script src="scripts/boot-guard.js"></script>
+</head>
+<body data-metal="polished">
+
+<div class="loader" id="loader">
+  <img class="loader__logo" src="assets/logo/spotime_lab_horizontal_black.png" alt="SPOTIME LAB">
+  <svg class="loader__blocks" viewBox="0 0 15 15" aria-hidden="true">
+    <g transform="translate(12 6)"><rect x="0" y="0" width="1" height="1"/><rect x="2" y="0" width="1" height="1"/><rect x="0" y="2" width="1" height="1"/><rect x="2" y="2" width="1" height="1"/></g>
+    <g transform="translate(10 2)"><rect x="0" y="0" width="1" height="1"/><rect x="2" y="0" width="1" height="1"/><rect x="0" y="2" width="1" height="1"/><rect x="2" y="2" width="1" height="1"/></g>
+    <g transform="translate(6 0)"><rect x="0" y="0" width="1" height="1"/><rect x="2" y="0" width="1" height="1"/><rect x="0" y="2" width="1" height="1"/><rect x="2" y="2" width="1" height="1"/></g>
+    <g transform="translate(2 2)"><rect x="0" y="0" width="1" height="1"/><rect x="2" y="0" width="1" height="1"/><rect x="0" y="2" width="1" height="1"/><rect x="2" y="2" width="1" height="1"/></g>
+    <g transform="translate(0 6)"><rect x="0" y="0" width="1" height="1"/><rect x="2" y="0" width="1" height="1"/><rect x="0" y="2" width="1" height="1"/><rect x="2" y="2" width="1" height="1"/></g>
+    <g transform="translate(2 10)"><rect x="0" y="0" width="1" height="1"/><rect x="2" y="0" width="1" height="1"/><rect x="0" y="2" width="1" height="1"/><rect x="2" y="2" width="1" height="1"/></g>
+    <g transform="translate(6 12)"><rect x="0" y="0" width="1" height="1"/><rect x="2" y="0" width="1" height="1"/><rect x="0" y="2" width="1" height="1"/><rect x="2" y="2" width="1" height="1"/></g>
+    <g transform="translate(10 10)"><rect x="0" y="0" width="1" height="1"/><rect x="2" y="0" width="1" height="1"/><rect x="0" y="2" width="1" height="1"/><rect x="2" y="2" width="1" height="1"/></g>
+  </svg>
+  <p class="loader__hint" id="loader-hint">LOADING</p>
+</div>
+
+<div class="sheen" aria-hidden="true"></div>
+<canvas class="halo-canvas" id="halo-canvas" aria-hidden="true" hidden></canvas>
+<div class="halo halo--a" aria-hidden="true"></div>
+<div class="halo halo--b" aria-hidden="true"></div>
+
+<main class="stage">
+  <section class="quiz" id="quiz">
+    <div class="camera">
+      <img class="camera__body" src="assets/camera/ccd_back_v6.webp" alt="" draggable="false" crossorigin="anonymous">
+      <i class="cam-sheen" aria-hidden="true"></i>
+      <!-- 快門是另一張圖疊在機身上，按下去會往下沉進頂蓋 -->
+      <button class="cam-shutter" id="cam-shutter" type="button" aria-label="按快門拍照" aria-disabled="true"><span class="cam-shutter__well"><span class="cam-shutter__cap"></span></span></button>
+      <i class="cam-led" aria-hidden="true"></i>
+      <i class="cam-led-warn" aria-hidden="true"></i>
+      <!-- 快門提示（10-02 Jimmy 定 halo：膠囊光＋背光，樣式在 shuttercue.css） -->
+      <div class="cam-cue" aria-hidden="true">
+        <i class="cam-cue__halo"></i>
+        <i class="cam-cue__pill"></i>
+      </div>
+      <!-- 機身下面的三顆實體按鍵：圖示一直看得到，相機拉近修貼片時才按得動（data-live） -->
+      <div class="cam-keys" id="cam-keys" data-live="off">
+        <button class="cam-key" data-key="ccw" type="button" aria-label="逆時針轉" style="--x: 29.13%"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 7.5A6.5 6.5 0 1 1 5.6 13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M4.2 5.2v4.6h4.6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button class="cam-key" data-key="cw" type="button" aria-label="順時針轉" style="--x: 47.77%"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 7.5A6.5 6.5 0 1 0 18.4 13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M19.8 5.2v4.6h-4.6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button class="cam-key" data-key="undo" type="button" aria-label="回復上一步" style="--x: 66.41%"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 13.5 4 9l4.5-4.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.5 9h9.75a5.25 5.25 0 0 1 0 10.5H10" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button>
+      </div>
+
+      <div class="lcd" data-idle="logo">
+        <div class="lcd__idle" aria-hidden="true">
+          <i class="idle__bars"></i>
+          <i class="idle__logo"></i>
+          <i class="idle__snow"></i>
+          <i class="idle__roll"></i>
+          <i class="idle__scan"></i>
+        </div>
+        <div class="lcd__frame" id="preview" role="img" aria-label="相機螢幕">
+          <img class="layer layer--plate"  id="layer-plate"  alt="" draggable="false">
+          <img class="layer layer--person" id="layer-person" alt="" draggable="false">
+          <img class="sticker" id="sticker-w" alt="" draggable="false">
+          <img class="sticker" id="sticker-m" alt="" draggable="false">
+        </div>
+        <div class="lcd__grain" aria-hidden="true"></div>
+        <div class="lcd__hud" aria-hidden="true">
+          <span class="hud__rec"><i></i>REC</span>
+          <span class="hud__count">[ <b id="hud-count">5</b> ]</span>
+          <span class="hud__date" id="hud-date">'26 12 01</span>
+          <b class="hud__corner hud__corner--tl"></b>
+          <b class="hud__corner hud__corner--tr"></b>
+          <b class="hud__corner hud__corner--bl"></b>
+          <b class="hud__corner hud__corner--br"></b>
+        </div>
+        <div class="lcd__tray" id="tray" aria-hidden="true">
+          <img class="tray__sticker" id="tray-sticker" alt="" draggable="false">
+          <span class="tray__word"><i>L</i><i>O</i><i>A</i><i>D</i><i>E</i><i>D</i></span>
+        </div>
+        <!-- 修圖時多貼幾枚（10-06 Jimmy）：照上面 LOADED 暫存槽的樣子，四顆造型鈕由 camedit.js 放進來 -->
+        <div class="lcd__add" id="cam-add" role="group" aria-label="多貼一枚造型貼" hidden>
+          <span class="add__word" aria-hidden="true"><i>+</i><i>A</i><i>D</i><i>D</i></span>
+        </div>
+        <!-- 垃圾桶（10-06 Jimmy）：修圖時一直在，多貼了才變明顯。多加的拖過來丟掉，點它＝丟掉選到的那枚。蓋子分開畫，對準時打開 -->
+        <button class="lcd__bin" id="cam-bin" type="button" aria-label="丟掉選到的造型貼" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <g class="bin__lid"><path d="M4 6.5h16"/><path d="M9.5 6.5V4.8c0-.5.4-.8.8-.8h3.4c.5 0 .8.4.8.8v1.7"/></g>
+            <path d="M6 9l.9 10.2c.1.9.8 1.6 1.7 1.6h6.8c.9 0 1.6-.7 1.7-1.6L18 9"/>
+            <path d="M10 12v5.5M14 12v5.5"/>
+          </svg>
+        </button>
+        <div class="lcd__cue" aria-hidden="true">PRESS HERE ✦</div>
+        <div class="lcd__flash" id="lcd-flash" aria-hidden="true"></div>
+        <div class="lcd__shutter" id="shutter" aria-hidden="true"><i></i><i></i></div>
+        <i class="lcd__glass" aria-hidden="true"></i>
+      </div>
+    </div>
+
+    <div class="cam-hint" id="cam-hint" hidden>
+      <p id="cam-hint-text" aria-live="polite"></p>
+      <button class="cam-bg" id="cam-bg" type="button" hidden>換成原本照片的背景</button>
+      <button class="btn btn--primary" id="cam-ok" type="button">修圖完成~進下一題</button>
+    </div>
+
+    <div class="question" aria-live="polite">
+      <p class="question__kicker" id="q-kicker">Q1 / 5</p>
+      <h1 class="question__title" id="q-title">載入中</h1>
+      <p class="question__sub" id="q-sub"></p>
+      <div class="options" id="options" role="group"></div>
+      <button class="back" id="back" type="button" hidden>← 上一題</button>
+    </div>
+  </section>
+
+  <section class="result" id="result" aria-live="polite">
+    <div class="slot">
+      <figure class="paper" id="paper">
+        <img class="paper__img" id="paper-img" alt="你的造型貼結果圖">
+        <figcaption class="paper__caption" id="paper-caption">SPOTIME</figcaption>
+      </figure>
+    </div>
+
+    <div class="verdict">
+      <button class="selfie-cta" id="selfie-open" type="button" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l1.6-2.2h6.8L17 8h3v11H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="13.2" r="3.4" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+        <span class="selfie-cta__label">換成我的自拍</span>
+      </button>
+      <h1 class="verdict__title" id="verdict-title"></h1>
+      <p class="verdict__line" id="verdict-line"></p>
+      <p class="verdict__tag" id="verdict-tag"></p>
+    </div>
+
+    <div class="actions" id="actions">
+      <!-- 09-30 Jimmy：存圖和發 IG 兩顆按下去都是同一個分享面板，只留一顆；上面那句是固定文案 -->
+      <p class="actions__lead">快分享你的 SPOTIME 給朋友們吧！</p>
+      <button class="btn btn--primary btn--ig" id="ig-story" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="5" fill="none" stroke="currentColor" stroke-width="1.9"/><circle cx="12" cy="12" r="3.9" fill="none" stroke="currentColor" stroke-width="1.9"/><circle cx="17.1" cy="6.9" r="1.2" fill="currentColor"/></svg>
+        <span class="btn__label">發到 IG 限時動態</span>
+      </button>
+
+      <!-- 10-02 評估報告第 3 條：用範例臉的人第一次按發限動，先問一次要不要換成自己的臉（scripts/result.js） -->
+      <div class="faceask" id="faceask" role="group" aria-label="要不要換成你的自拍" hidden>
+        <p class="faceask__text">這張是示範版本。換成你的自拍再發，朋友一眼就能認得出是你</p>
+        <div class="faceask__btns">
+          <button class="btn btn--primary" id="faceask-yes" type="button">換成我的自拍</button>
+          <button class="btn btn--ghost" id="faceask-no" type="button">直接發到 IG 限時動態</button>
+        </div>
+      </div>
+
+      <form class="signup" id="signup" novalidate>
+        <div class="signup__row">
+          <input class="signup__input" id="email" type="email" inputmode="email"
+                 autocomplete="email" placeholder="你的 email" aria-label="你的 email">
+          <button class="btn btn--ghost signup__submit" type="submit">送出</button>
+        </div>
+        <p class="signup__status" id="signup-status" role="status"></p>
+        <!-- 10-02 Jimmy：填完 email 才出現。只寫上市日，不寫折扣 -->
+        <p class="signup__launch">SPOTIME 商品預計於 12/1 開始販售，敬請期待</p>
+        <p class="signup__note">不定期發送 SPOTIME 新品與優惠消息，隨時可取消。</p>
+      </form>
+
+      <button class="restart" id="restart" type="button">換個答案再測一次</button>
+    </div>
+  </section>
+</main>
+
+<div class="saveover" id="saveover" role="dialog" aria-modal="true" aria-label="儲存結果圖">
+  <button class="saveover__close" id="saveover-close" type="button" aria-label="關閉">×</button>
+  <img id="saveover-img" alt="你的造型貼結果圖">
+  <p>長按圖片 →「儲存到照片」，再到 IG 發限時動態，記得標註 @spotimelab</p>
+  <a class="btn btn--ig saveover__ig" href="instagram://story-camera">存好了，打開 IG 限時動態</a>
+</div>
+
+<!-- 發 IG 限動的兩步引導：分享面板只蓋住下半部，這條浮在上面。兩步都列出來，做到哪一步亮哪一步 -->
+<div class="igguide" id="igguide" role="status" aria-live="polite" hidden>
+  <ol class="igguide__steps">
+    <li class="igguide__step" data-step="1"><b><i>1</i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12.5l4 4 8-9" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></b><span id="igguide-save"></span></li>
+    <li class="igguide__step" data-step="2"><b><i>2</i></b><span id="igguide-post"></span></li>
+  </ol>
+  <a class="btn igguide__open" id="igguide-open" href="instagram://story-camera" hidden>打開 IG 限時動態</a>
+  <button class="igguide__close" id="igguide-close" type="button" aria-label="關閉">×</button>
+</div>
+
+<!-- 上傳自拍：挑照片說明 → 分析中 → 檢查結果＋可拖曳的預覽 -->
+<div class="selfie" id="selfie" role="dialog" aria-modal="true" aria-labelledby="selfie-title" hidden>
+  <div class="selfie__panel">
+    <div class="selfie__grab" id="selfie-grab" aria-hidden="true"><i></i></div>
+    <button class="selfie__close" id="selfie-close" type="button" aria-label="關閉">×</button>
+
+    <section class="selfie__step" data-step="guide">
+      <h2 class="selfie__title" id="selfie-title">用你的自拍做一張</h2>
+      <p class="selfie__lead">從相簿挑一張這樣的照片，效果最好：</p>
+      <ul class="selfie__rules">
+        <li><b>正臉看鏡頭</b>，不要側臉</li>
+        <li><b>整張臉都露出來</b>，沒被手、口罩、頭髮擋住</li>
+        <li><b>光線夠亮</b>、照片清楚不糊</li>
+        <li><b>背景越單純越好</b>，牆壁、天空最理想</li>
+        <li id="selfie-rule-neck" hidden><b>脖子要露出來</b>，你選了貼在脖子</li>
+      </ul>
+      <p class="selfie__small">自拍或最多四個人的合照都可以。照片只在你的手機裡處理，不會上傳到任何地方。</p>
+      <label class="btn btn--primary selfie__pick" for="selfie-file">從相簿選照片</label>
+      <div class="selfie__prep" id="selfie-prep" data-state="loading" hidden>
+        <div class="selfie__meter"><i id="selfie-meter"></i></div>
+        <p class="selfie__progress" id="selfie-progress" aria-live="polite"></p>
+      </div>
+    </section>
+
+    <section class="selfie__step" data-step="busy" hidden>
+      <div class="selfie__thumb"><img id="selfie-thumb" alt="你選的照片"><i class="selfie__scan"></i></div>
+      <p class="selfie__busy" id="selfie-busy" aria-live="polite">正在看這張照片⋯</p>
+      <div class="selfie__meter selfie__meter--busy" id="selfie-busy-meter" hidden><i id="selfie-busy-meter-fill"></i></div>
+    </section>
+
+    <section class="selfie__step" data-step="review" hidden>
+      <div class="selfie__stage"><canvas class="selfie__canvas" id="selfie-canvas"></canvas></div>
+      <div class="selfie__tools" id="selfie-tools" hidden>
+        <button class="selfie__tool" id="selfie-rot-ccw" type="button" aria-label="逆時針轉">↺</button>
+        <button class="selfie__tool selfie__tool--text" id="selfie-reset" type="button">還原</button>
+        <button class="selfie__tool" id="selfie-rot-cw" type="button" aria-label="順時針轉">↻</button>
+      </div>
+      <p class="selfie__hint" id="selfie-hint">貼片位置不對的話，用手指拖到想要的地方。</p>
+      <div class="selfie__verdict" id="selfie-verdict" aria-live="polite"></div>
+      <div class="selfie__buttons">
+        <!-- 10-06 Jimmy：預設去背換場景，多一個「換成原本照片的背景」的選擇。放在黏底的按鈕區，不用捲就看得到 -->
+        <div class="selfie__bg" id="selfie-bg" role="radiogroup" aria-label="背景" hidden>
+          <button type="button" role="radio" data-bg="scene" aria-checked="true">換成 SPOTIME 場景</button>
+          <button type="button" role="radio" data-bg="photo" aria-checked="false">換成原本照片的背景</button>
+        </div>
+        <button class="btn btn--primary" id="selfie-done" type="button">就用這張</button>
+        <button class="btn btn--ghost" id="selfie-cheek" type="button" hidden>改貼臉頰</button>
+        <label class="btn btn--ghost selfie__pick" for="selfie-file" id="selfie-again">換一張</label>
+      </div>
+    </section>
+
+    <button class="selfie__skip" id="selfie-skip" type="button" hidden>先不用，用 SPOTIME 範例照開始</button>
+
+    <input class="selfie__file" id="selfie-file" type="file" accept="image/*">
+  </div>
+</div>
+
+<script type="module" src="scripts/main.js"></script>
+<!-- Cloudflare Web Analytics：看有多少人打開、手機或電腦、從哪裡點進來。
+     token 是公開的站台識別碼（本來就會出現在每位訪客的瀏覽器裡），不是密碼。
+     後台：Cloudflare → Analytics → Web analytics → spotime-quiz.spotime.workers.dev -->
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "a9a47fc7058e4eb1805a5932a856272d"}'></script>
+</body>
+</html>

@@ -1,0 +1,124 @@
+/* 按快門那一步（10-02 Jimmy：測試者找不到快門）。
+   1. 相機拿近：變大、往左挪，快門落在畫面右邊偏中間，視線自然落在那裡
+   2. 快門提示（10-02 第三輪 Jimmy 挑了 halo，trace 拿掉）：膠囊光推向快門＋粉紅背光＋金屬反光，細節見下面
+   3. 停 6 秒沒動作：周圍變暗、只留快門亮（idlespot.css／scripts/idlespot.js）
+   粉紅一頁只用在一個地方：只有快門的背光是粉紅，反光是白的。
+   位置都對著快門中心：left 90.18% + 4.46% / 2、top 67.22% + 15.34% / 2（camedit.css 的 .cam-shutter） */
+
+/* ---- 相機拿近 ---- */
+.quiz .camera { transition: width 420ms cubic-bezier(.2, .8, .2, 1), translate 420ms cubic-bezier(.2, .8, .2, 1); }
+.quiz.is-closeup .camera {
+  width: min(100vw, 460px, calc(64svh * var(--body-ratio)));
+  translate: -12% 0;
+}
+@media (max-height: 700px) and (max-width: 879px) {
+  .quiz.is-closeup .camera { width: min(100vw, 460px, calc(60svh * var(--body-ratio))); }
+}
+@media (min-width: 880px) and (min-height: 560px) {
+  .quiz.is-closeup .camera { width: min(44vw, 500px, calc(84svh * var(--body-ratio))); translate: none; }
+}
+
+/* 拉近後相機和提示會超出畫面右邊一點，不能讓整頁可以左右捲 */
+.stage:has(.quiz.is-closeup) { overflow-x: clip; }
+
+/* ---- 共用：提示都掛在快門中心這一點上 ---- */
+.cam-cue {
+  position: absolute;
+  z-index: 2;               /* 在機身上、快門（z-index 3）底下：光是從快門後面透出來 */
+  left: 92.41%;
+  top: 74.89%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.cam-cue > * { position: absolute; opacity: 0; pointer-events: none; }
+
+/* ---- 背光（halo，10-02 第三版）：Jimmy 說好看但不夠明顯。
+   參考 iPhone「按兩下側邊按鈕付款」：螢幕邊緣貼著實體按鍵亮一條膠囊光，往按鍵那邊推。
+   這裡一樣：快門外側一條白芯的光（.cam-cue__pill）推向快門，推到的那一下快門自己往裡縮一下
+   （camedit.css 的 cam-shutter-nudge，77%）、輪廓透出粉紅光；背後再一團糊開的粉紅背光。
+   一圈 2.6 秒，所有動畫都 1 秒後開始，跟快門自己縮的節奏對齊：
+     12–44%  金屬反光從上往下等速掃過整顆快門
+     45–72%  膠囊光從外面滑進來，貼到快門
+     72–90%  推一下（快門縮）、背光和輪廓最亮
+     90–100% 退掉 */
+.cam-cue__halo {
+  left: 0;
+  top: 0;
+  width: 18cqw;
+  height: 34cqw;
+  translate: -28% -50%;     /* 稍微偏右：快門凸出去那側亮一點 */
+  border-radius: 50%;
+  /* 10-02 第四版（Jimmy：粉紅太多）：改成淡粉、整體再透一點 */
+  background: radial-gradient(closest-side, rgba(255, 170, 214, .6), rgba(255, 190, 224, .26) 58%, rgba(255, 200, 228, 0));
+  filter: blur(1.2cqw);
+}
+/* 膠囊光：快門圖的右緣在中心 +2.2cqw 左右，膠囊貼著它 */
+.cam-cue__pill {
+  left: 2.5cqw;
+  top: 0;
+  width: 1.15cqw;
+  height: 17cqw;
+  translate: 0 -50%;
+  border-radius: 1cqw;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0), #fff 22%, #fff 78%, rgba(255, 255, 255, 0));
+  box-shadow: 0 0 1cqw rgba(255, 180, 220, .9), 0 0 2.6cqw rgba(255, 170, 214, .45);
+}
+.camera.is-armed .cam-cue__halo { animation: cue-breathe 2.6s 1s ease-in-out infinite; }
+.camera.is-armed .cam-cue__pill { animation: cue-pill 2.6s 1s cubic-bezier(.3, .7, .3, 1) infinite; }
+.camera.is-armed .cam-shutter.is-ready:not(.is-half):not(.is-pressed) { animation: cue-rim 2.6s 1s ease-in-out infinite; }
+@keyframes cue-breathe {
+  0%, 100% { opacity: .45; transform: scale(.9); }
+  78%      { opacity: 1; transform: scale(1.06); }
+}
+@keyframes cue-pill {
+  0%, 45%  { opacity: 0; transform: translateX(2.4cqw) scaleY(.7); }
+  58%      { opacity: 1; }
+  72%      { opacity: 1; transform: translateX(0) scaleY(1); }
+  77%      { opacity: 1; transform: translateX(-.45cqw) scaleY(1); }
+  84%      { opacity: .9; transform: translateX(0) scaleY(1); }
+  100%     { opacity: 0; transform: translateX(.8cqw) scaleY(.85); }
+}
+@keyframes cue-rim {
+  0%, 60%, 100% { filter: drop-shadow(0 0 .3cqw rgba(255, 170, 214, .35)); }
+  78%           { filter: drop-shadow(0 0 .5cqw rgba(255, 160, 210, .85)) drop-shadow(0 0 1.8cqw rgba(255, 190, 224, .6)); }
+}
+
+/* ---- 金屬反光：一道白光從上往下掃過快門。
+   10-02 第四版（Jimmy：反光沒貼著快門輪廓，近看像閃光的長方形）：
+   反光本身是 ccd_shutter_v6_glint.png（tools/shutter_glint.py）＝只有快門本體、亮度跟著快門的斜面和溝紋，
+   不含左邊那條機身；掃過去的那道光是遮罩在走，所以看得到的永遠是快門的形狀 */
+.cam-shutter__cap::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: url("../assets/camera/ccd_shutter_v6_glint.png") center / 100% 100% no-repeat;
+  -webkit-mask: linear-gradient(to bottom, transparent 34%, #000 44%, #000 56%, transparent 66%) 0 100% / 100% 300% no-repeat;
+  mask: linear-gradient(to bottom, transparent 34%, #000 44%, #000 56%, transparent 66%) 0 100% / 100% 300% no-repeat;
+  opacity: 0;
+}
+.camera.is-armed .cam-shutter.is-ready:not(.is-half):not(.is-pressed) .cam-shutter__cap::after {
+  animation: cue-glint 2.6s 1s linear infinite;
+}
+/* 10-02 第五版（Jimmy：反光只看得到上緣，中間和下面沒有）：
+   以前 ease-in-out＝頭尾慢中間快，光帶停在上緣最久、中間一閃就過；下半部金屬比較暗，反光也跟著淡。
+   改成等速掃、從 12% 掃到 44%（約 0.8 秒）、亮帶加寬，反光圖暗的地方也提亮（shutter_glint.py FLOOR）。
+   遮罩 300% 高、亮帶在 34–66%：位置 100% 時整條在快門上面，0 時整條在下面，中間每一段停一樣久 */
+@keyframes cue-glint {
+  0%, 12%   { opacity: 0; -webkit-mask-position: 0 100%; mask-position: 0 100%; }
+  14%       { opacity: .85; }
+  42%       { opacity: .85; }
+  44%       { opacity: 0; -webkit-mask-position: 0 0; mask-position: 0 0; }
+  100%      { opacity: 0; -webkit-mask-position: 0 0; mask-position: 0 0; }
+}
+
+/* 手指碰到相機（半按）：提示退下，換對焦框變綠接手 */
+.camera:has(.cam-shutter.is-half) .cam-cue > * { animation: none; opacity: 0; transition: opacity 150ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .quiz .camera { transition: none; }
+  .cam-cue > *,
+  .cam-shutter,
+  .cam-shutter__cap::after { animation: none !important; }
+  .camera.is-armed .cam-cue__halo { opacity: .7; }
+}

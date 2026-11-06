@@ -1,0 +1,40 @@
+// 部署：在 ~/spotime-quiz 執行 `wrangler deploy`，會把 web/ 整包推到
+// https://spotime-quiz.spotime.workers.dev（跟 Cloudflare 後台拖曳上傳是同一個專案）。
+// 10-05 起多了 worker/：/api 先經過它（限流＋通行碼）再轉給 Apps Script，
+// 所以**不能再用後台拖曳上傳**，一律用指令。web/.assetsignore 列的是不上線的工具頁。
+//
+// 兩個 secret 不寫在這裡，每個 Worker（正式／測試）各設一次：
+//   wrangler secret put APPS_SCRIPT_URL --name <worker>   ← Apps Script 的 /exec 網址
+//   wrangler secret put PROXY_TOKEN --name <worker>       ← 跟 Apps Script「指令碼屬性」同一串
+{
+  "name": "spotime-quiz",
+  "compatibility_date": "2026-09-29",
+  "main": "worker/index.js",
+  "assets": {
+    "directory": "./web",
+    "binding": "ASSETS",
+    // 只有 /api 跑程式，其他靜態檔照舊直接送，不算 Worker 次數
+    "run_worker_first": ["/api"]
+  },
+  // 限流計數（每個 IP 一個 Gate）與全站共用的統計表（一個 Stats），見 worker/objects.js。
+  // 每分鐘幾次寫在 worker/api.js 的 PER_MINUTE。
+  // 10-05 試過內建的 ratelimits：同一個 IP 會分到不同機器各算各的，設 5 次、12 次全放行，所以不用。
+  "durable_objects": {
+    "bindings": [
+      { "name": "GATE", "class_name": "Gate" },
+      { "name": "STATS", "class_name": "Stats" },
+      // 10-06 流量漏斗：網頁每一步的人數，見 worker/funnel.js
+      { "name": "FUNNEL", "class_name": "Funnel" }
+    ]
+  },
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["Gate", "Stats"] },
+    { "tag": "v2", "new_sqlite_classes": ["Funnel"] }
+  ],
+  // 每小時整點把流量漏斗寫進試算表「流量漏斗」分頁（index.js 的 scheduled）
+  "triggers": { "crons": ["0 * * * *"] },
+  // 試算表「站別」欄寫這個。測試站部署時用 --var SITE:測試站 蓋掉，兩站的數字才不會混在一起
+  "vars": { "SITE": "正式站" },
+  // 每次部署不要另外產生預覽網址，只留正式那一個
+  "preview_urls": false
+}

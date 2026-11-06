@@ -1,0 +1,213 @@
+{
+ "_note": "由 tools/export_web.py 產生，不要手改",
+ "frame": {
+  "width": 1000,
+  "height": 1250,
+  "aspect": 0.8
+ },
+ "order": [
+  "concert",
+  "baseball",
+  "photobooth",
+  "campus"
+ ],
+ "scenes": {
+  "concert": {
+   "label": "演唱會 / 音樂祭",
+   "plate": "scene/concert.webp",
+   "person": "person/concert.webp",
+   "lighting": {
+    "ambient": [
+     88,
+     58,
+     132
+    ],
+    "ambient_mix": 0.22,
+    "rim": [
+     206,
+     132,
+     255
+    ],
+    "rim_mix": 0.85,
+    "rim_width": 0.024,
+    "exposure": 0.93
+   }
+  },
+  "baseball": {
+   "label": "棒球應援",
+   "plate": "scene/baseball.webp",
+   "person": "person/baseball.webp",
+   "lighting": {
+    "ambient": [
+     142,
+     160,
+     180
+    ],
+    "ambient_mix": 0.17,
+    "rim": [
+     255,
+     238,
+     206
+    ],
+    "rim_mix": 0.52,
+    "rim_width": 0.018,
+    "exposure": 1.05
+   }
+  },
+  "photobooth": {
+   "label": "拍貼機",
+   "plate": "scene/photobooth.webp",
+   "person": "person/photobooth.webp",
+   "lighting": {
+    "ambient": [
+     255,
+     214,
+     224
+    ],
+    "ambient_mix": 0.22,
+    "rim": [
+     255,
+     246,
+     250
+    ],
+    "rim_mix": 0.45,
+    "rim_width": 0.014,
+    "exposure": 1.06
+   }
+  },
+  "campus": {
+   "label": "校園活動日",
+   "plate": "scene/campus.webp",
+   "person": "person/campus.webp",
+   "lighting": {
+    "ambient": [
+     150,
+     168,
+     172
+    ],
+    "ambient_mix": 0.18,
+    "rim": [
+     255,
+     252,
+     240
+    ],
+    "rim_mix": 0.38,
+    "rim_width": 0.014,
+    "exposure": 1.03
+   }
+  }
+ },
+ "idle": {
+  "person": "person/idle.webp"
+ },
+ "stickers": {
+  "heart": {
+   "src": "sticker/heart.png",
+   "ratio": 0.9023
+  },
+  "star": {
+   "src": "sticker/star.png",
+   "ratio": 0.9531
+  },
+  "teardrop": {
+   "src": "sticker/teardrop.png",
+   "ratio": 1.4219
+  },
+  "tomato": {
+   "src": "sticker/tomato.png",
+   "ratio": 0.8164
+  },
+  "wing": {
+   "src": "sticker/wing.png",
+   "ratio": 0.7148,
+   "hidden": true
+  },
+  "clover": {
+   "src": "sticker/clover.png",
+   "ratio": 1.0078,
+   "hidden": true
+  }
+ },
+ "points": {
+  "W": {
+   "size": 0.03107,
+   "at": {
+    "cheek": {
+     "xy": [
+      0.36041,
+      0.53906
+     ],
+     "roll": 25
+    },
+    "under_eye": {
+     "xy": [
+      0.4767,
+      0.41016
+     ],
+     "roll": -25
+    },
+    "forehead_side": {
+     "xy": [
+      0.2601,
+      0.40234
+     ],
+     "roll": -45
+    },
+    "neck": {
+     "xy": [
+      0.41678,
+      0.62678
+     ],
+     "roll": -16
+    }
+   }
+  },
+  "M": {
+   "size": 0.03373,
+   "at": {
+    "cheek": {
+     "xy": [
+      0.76343,
+      0.32741
+     ],
+     "roll": 7
+    },
+    "under_eye": {
+     "xy": [
+      0.68531,
+      0.30611
+     ],
+     "roll": 20
+    },
+    "forehead_side": {
+     "xy": [
+      0.50333,
+      0.28587
+     ],
+     "roll": 10
+    },
+    "neck": {
+     "xy": [
+      0.82512,
+      0.45277
+     ],
+     "roll": 0
+    }
+   }
+  }
+ },
+ "camera": {
+  "src": "camera/ccd_back.webp",
+  "screen": {
+   "left": 0.09918,
+   "top": 0.08779,
+   "width": 0.75951,
+   "height": 0.70636
+  }
+ },
+ "logo": {
+  "wordmark": "logo/spotime_lab_horizontal_white.png",
+  "wordmark_dark": "logo/spotime_lab_horizontal_black.png",
+  "symbol": "logo/spt_symbol.png"
+ }
+}

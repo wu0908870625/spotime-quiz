@@ -1,0 +1,387 @@
+/* ?demo=zoom（scripts/camedit.js）：相機拉近，在相機螢幕上修圖，按快門進結果頁 */
+
+/* 拉近：相機變大、題目收起來，換成一行操作說明 */
+.quiz .camera { transition: width 420ms cubic-bezier(.2, .8, .2, 1); }   /* 拉近、拉遠都走這條（以前只寫在拉近，拉遠會直接跳回去） */
+.quiz.is-zoomed .camera { width: min(94vw, 440px, calc(66svh * var(--body-ratio))); }
+.quiz.is-zoomed .question { display: none; }
+/* 拉遠：相機縮回去的那段時間題目先藏著（題目會跟著相機一起往上推，看起來在晃），縮完再淡進來 */
+.quiz.is-unzooming .question { opacity: 0; }
+.quiz .question { transition: opacity 280ms var(--ease-out); }
+
+.cam-hint {
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+  max-width: 340px;
+  padding: 0 16px;
+  text-align: center;
+  animation: cam-hint-in 320ms 200ms var(--ease-out) backwards;
+}
+.cam-hint p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.cam-hint .btn { min-width: 220px; }
+.cam-hint[hidden] { display: none; }
+@keyframes cam-hint-in { from { opacity: 0; transform: translateY(6px); } }
+
+/* 螢幕上的修圖畫布：蓋在圖層上面、快門葉片和黑幕下面 */
+.cam-edit {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  -webkit-touch-callout: none;
+  user-select: none;
+  cursor: grab;
+  animation: cam-edit-in 200ms ease-out backwards;
+}
+@keyframes cam-edit-in { from { opacity: 0; } }
+.lcd .selfie__loupe { z-index: 5; }
+
+/* 機身下面的三顆黑鍵：位置對準機身 v6（按鍵中心 y＝82.56%，黑色鍵面直徑 12.28%，見 assets/camera/ccd_back_v6.json）。
+   圖示一直看得到，平常是淡的、按得下去但沒有作用（10-01 Jimmy：只有快門能按，相機很假）；
+   相機拉近修貼片時才亮起來、真的有功能（data-live="on"）。 */
+.camera__body { position: relative; z-index: 1; }
+.camera .lcd { z-index: 2; }           /* 機身圖墊一層，螢幕在上面 */
+.cam-keys { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+.cam-key {
+  position: absolute;
+  left: var(--x);
+  top: 82.56%;
+  width: 12.28%;
+  aspect-ratio: 1;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: transparent;
+  color: rgba(255, 255, 255, .94);
+  pointer-events: auto;
+  touch-action: manipulation;
+  cursor: pointer;
+  /* 放開：彈簧推回來，慢一點、最後稍微過頭（10-02 Jimmy：回彈太快不像真的） */
+  transition: transform 220ms cubic-bezier(.34, 1.7, .6, 1), background 220ms ease-out, box-shadow 220ms ease-out;
+}
+/* 手指的熱區比鍵面大一點，含銀邊。10-06 從 -12% 加到 -18%：鍵面 33px 時熱區約 45px（Apple 建議 44），鍵距 18.6% 不會重疊 */
+.cam-key::before { content: ""; position: absolute; inset: -18%; border-radius: 50%; }
+/* 印在黑鍵上的白色圖示（跟 W800 的 MENU 鍵一樣） */
+.cam-key svg {
+  width: 46%;
+  height: 46%;
+  transition: opacity 200ms var(--ease-out);
+}
+/* 按下去：一下就到底，整顆往裡縮、中間壓出陰影。至少壓住 110ms 才放（press.js） */
+.cam-key.is-down {
+  transform: translate(-50%, -50%) scale(.9);
+  background: radial-gradient(circle, rgba(0, 0, 0, .25), rgba(0, 0, 0, .45));
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, .6);
+  transition-duration: 45ms;
+  transition-timing-function: ease-out;
+}
+.cam-keys[data-live="off"] .cam-key svg { opacity: .3; }
+/* 亮起來那一下依序點亮，提示「現在可以按了」 */
+.cam-keys[data-live="on"] .cam-key svg { animation: cam-key-on 420ms var(--ease-out) backwards; }
+.cam-keys[data-live="on"] .cam-key:nth-child(2) svg { animation-delay: 70ms; }
+.cam-keys[data-live="on"] .cam-key:nth-child(3) svg { animation-delay: 140ms; }
+@keyframes cam-key-on {
+  0%   { opacity: .3; transform: scale(1); }
+  45%  { opacity: 1;   transform: scale(1.14); }
+  100% { opacity: 1;   transform: scale(1); }
+}
+.camera { container-type: inline-size; }
+
+/* 快門：機身圖上的快門切成獨立一張圖（tools/body_v6.py），疊回原位。
+   在右邊長邊（W800 轉直），按下去往左縮：外框（well）的左緣就是側面裡的凹槽底，縮進去的那截被切掉，看起來是壓進機身。
+   位置：left 90.18%、top 67.22%、寬 4.46%、高 15.34%（機身 896×1147 的比例） */
+.cam-shutter {
+  position: absolute;
+  z-index: 3;
+  left: 90.18%;
+  top: 67.22%;
+  width: 4.46%;
+  height: 15.34%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.cam-shutter[aria-disabled="true"] { cursor: default; }
+/* 手指熱區比按鍵大（快門只凸出來 3mm）：往左蓋到機身上、往右多一截 */
+.cam-shutter::before { content: ""; position: absolute; inset: -8% -90% -8% -170%; }
+.cam-shutter__well { position: absolute; inset: 0; overflow: hidden; }
+.cam-shutter__cap {
+  position: absolute;
+  inset: 0;
+  background: url("../assets/camera/ccd_shutter_v6.webp") center / 100% 100% no-repeat;
+  /* 放開：慢慢推回來、稍微過頭一點 */
+  transition: transform 260ms cubic-bezier(.3, 1.35, .55, 1), filter 260ms var(--ease-out);
+}
+/* 快門分兩段，跟真的相機一樣：
+   半按（手指碰到）往左 10%、螢幕對焦框變綠；按到底（放開手指那一下拍）往左 26%，一下就到、「喀擦」。
+   還不能拍的時候按：直接到底，什麼都不發生，電源燈閃橘燈 */
+.cam-shutter.is-half .cam-shutter__cap,
+.cam-shutter[aria-disabled="false"].is-down .cam-shutter__cap {
+  transform: translateX(-10%);
+  transition-duration: 70ms;
+  transition-timing-function: ease-out;
+}
+.cam-shutter[aria-disabled="true"].is-down .cam-shutter__cap,
+.cam-shutter.is-pressed .cam-shutter__cap {
+  transform: translateX(-26%);
+  filter: brightness(.88);
+  transition-duration: 40ms;
+  transition-timing-function: linear;
+}
+/* 等使用者按：快門自己輕輕動兩下，像在說「按我」 */
+.cam-shutter.is-ready:not(.is-half):not(.is-down):not(.is-pressed) .cam-shutter__cap {
+  animation: cam-shutter-nudge 2.6s 1s ease-in-out infinite;
+}
+@keyframes cam-shutter-nudge {
+  0%, 70%, 100% { transform: none; }
+  77%           { transform: translateX(-14%); }
+  84%           { transform: none; }
+  90%           { transform: translateX(-8%); }
+  96%           { transform: none; }
+}
+/* 等使用者按的光效在 shuttercue.css */
+
+/* 電源燈：機身圖上本來就是綠的，再加一點光暈看起來是亮著的。
+   平常光暈微微地呼吸、偶爾輕輕跳一下（10-01 Jimmy），按快門時閃 4 下（相機在處理） */
+.cam-led {
+  position: absolute;
+  z-index: 3;
+  left: 88.17%;
+  top: 57.93%;
+  width: 2.4%;
+  aspect-ratio: .55;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(closest-side, rgba(150, 255, 110, .75), rgba(120, 240, 90, .25) 55%, transparent);
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+.cam-led { animation: cam-led-idle 4.6s ease-in-out infinite; }
+@keyframes cam-led-idle {
+  0%, 100% { opacity: 1; }
+  40%      { opacity: .62; }
+  62%      { opacity: .95; }
+  64%      { opacity: .7; }
+  66%      { opacity: .95; }
+}
+.camera.is-busy .cam-led { animation: cam-led-busy 240ms steps(1, end) 4; }
+@keyframes cam-led-busy { 50% { opacity: 0; } }
+
+/* 橘燈：按到現在沒作用的鍵，閃兩下（camedit.js 的 nope）。
+   疊一顆不透明的橘點蓋住機身圖上的綠燈；不用 screen 混色，混出來會是黃的 */
+.cam-led-warn {
+  position: absolute;
+  z-index: 3;
+  left: 88.17%;
+  top: 57.93%;
+  width: 3.2%;
+  aspect-ratio: .62;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(closest-side, #ffd08a 0%, #ff9a2e 45%, rgba(255, 140, 30, .45) 70%, transparent);
+  opacity: 0;
+  pointer-events: none;
+}
+.camera.is-nope .cam-led-warn { animation: cam-led-nope 560ms linear both; }
+.camera.is-nope .cam-led { animation: none; opacity: 0; }
+@keyframes cam-led-nope {
+  0%, 30%   { opacity: 1; }
+  31%, 48%  { opacity: 0; }
+  49%, 82%  { opacity: 1; }
+  100%      { opacity: 0; }
+}
+
+/* 快門在哪（10-02 盲測找不到）：相機螢幕右下角顯示「按下快門」，像相機自己的提示字（日期先收起來）。
+   快門本身的光效在 shuttercue.css */
+.lcd__cue {
+  position: absolute;
+  z-index: 3;
+  right: 5%;
+  bottom: 4%;
+  padding: .45em .7em;
+  border: 1px solid rgba(255, 255, 255, .7);
+  background: rgba(8, 10, 14, .72);
+  font: 700 clamp(8px, 4.2cqw, 12px)/1 var(--font-mono, ui-monospace, monospace);
+  letter-spacing: .12em;
+  color: #fff;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 240ms var(--ease-out);
+}
+.camera.is-armed .lcd__cue { opacity: 1; }
+.camera.is-armed .hud__date { opacity: 0; }
+
+/* 半按快門：對焦框往裡收、變綠，像真的相機對到焦 */
+.hud__corner { transition: translate 120ms ease-out, border-color 120ms ease-out; }
+.lcd.is-af .hud__corner { border-color: #7dff8a; }
+.lcd.is-af .hud__corner--tl { translate: 3cqw 3cqw; }
+.lcd.is-af .hud__corner--tr { translate: -3cqw 3cqw; }
+.lcd.is-af .hud__corner--bl { translate: 3cqw -3cqw; }
+.lcd.is-af .hud__corner--br { translate: -3cqw -3cqw; }
+
+/* 按快門畫面：沒有選項，只留大標、說明和上一題（10-02 Jimmy：SHUTTER 小標和 ↗ 都拿掉） */
+.question.is-finale .question__kicker { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .quiz.is-zoomed .camera { transition: none; }
+  .cam-shutter.is-ready .cam-shutter__cap { animation: none; }
+  .cam-keys[data-live="on"] .cam-key svg,
+  .camera.is-busy .cam-led,
+  .cam-led,
+  .camera,
+  .cam-sheen::before,
+  .cam-sheen::after { animation: none; }
+  .quiz .camera { transition: none; }
+}
+
+/* 按快門那一步：整台相機都能按（盲測有人直接按螢幕） */
+.camera.is-armed { cursor: pointer; }
+
+/* 修圖時的「+ADD」膠囊（10-06 Jimmy）：外觀照 camera.css 的 .lcd__tray（LOADED 暫存槽），
+   位置也一樣在左下角。右下角的垃圾桶跟它排同一排（10-06 第二次回饋），
+   所以造型鈕和垃圾桶都跟著螢幕寬度縮放（--add-b），最窄的 iPhone SE 也排得下、不會重疊 */
+.lcd { --add-b: min(13.5cqw, 44px); --add-gap: max(8px, 4cqw); }
+.lcd__add {
+  position: absolute;
+  left: 4%;
+  bottom: 3.5%;
+  z-index: 5;                    /* 蓋在修圖畫布上面 */
+  display: flex;
+  align-items: center;
+  gap: .15em;
+  max-width: calc(92% - var(--add-b) - 2px - var(--add-gap));   /* 右邊留給垃圾桶 */
+  padding: 0 .35em 0 .75em;
+  border: 1px solid rgba(255, 255, 255, .28);
+  border-radius: 999px;
+  background: rgba(10, 12, 16, .5);
+  backdrop-filter: blur(4px);
+  font-family: var(--font-latin);
+  font-size: min(3.2cqw, 12px);
+  letter-spacing: .12em;
+  color: var(--k0);
+  animation: cam-hint-in 320ms 260ms var(--ease-out) backwards;
+}
+.lcd__add[hidden] { display: none; }
+.add__word { margin-right: .35em; }
+.add__word i {
+  font-style: normal;
+  opacity: .42;
+  animation: tray-wave 2.2s ease-in-out infinite;
+}
+.add__word i:nth-child(2) { animation-delay: 90ms; }
+.add__word i:nth-child(3) { animation-delay: 180ms; }
+.add__word i:nth-child(4) { animation-delay: 270ms; }
+/* 造型鈕那一段（10-12）：只露出題目的四款，翅膀、四葉草排在後面，往左滑才看得到（隱藏款，不加提示）。
+   滑完放手會對齊到整顆鈕，不會停在半顆 */
+.add__track {
+  display: flex;
+  gap: .15em;
+  max-width: calc(4 * var(--add-b) + 3 * .15em);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  touch-action: pan-x;
+}
+.add__track::-webkit-scrollbar { display: none; }
+.add__shape {
+  flex: none;
+  scroll-snap-align: start;
+  display: grid;
+  place-items: center;
+  width: var(--add-b);
+  height: var(--add-b);
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  touch-action: pan-x;               /* 按在鈕上也能左右滑出隱藏款 */
+  transition: transform 120ms var(--ease-out), background-color 120ms var(--ease-out);
+}
+.add__shape img {
+  width: 66%;
+  height: auto;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .5));
+  pointer-events: none;
+}
+.add__shape:active, .add__shape.is-down { transform: scale(.88); background: rgba(255, 255, 255, .14); }
+/* 右下角的垃圾桶：跟膠囊同一種深色霧面玻璃，跟膠囊排同一排、一樣高。
+   修圖時一直在、淡淡的；有多加的變明顯（has-extras）；拖著多加的那枚時全亮（is-ready）；手指對準時放大、蓋子打開（is-over）；丟進去時晃一下（is-gulp）。
+   一頁只有一處粉色，這裡用白光 */
+.lcd__bin {
+  position: absolute;
+  right: 4%;
+  bottom: 3.5%;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  width: calc(var(--add-b) + 2px);    /* 跟膠囊一樣高（造型鈕＋上下框線） */
+  height: calc(var(--add-b) + 2px);
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, .28);
+  border-radius: 50%;
+  background: rgba(10, 12, 16, .5);
+  backdrop-filter: blur(4px);
+  color: var(--k0);
+  opacity: .42;
+  touch-action: manipulation;
+  transform-origin: 100% 100%;   /* 放大時往右上長，盡量不蓋到左邊的膠囊 */
+  transition: transform 160ms var(--ease-out), opacity 160ms var(--ease-out),
+    background-color 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
+}
+.lcd__bin[hidden] { display: none; }
+.lcd__bin svg {
+  width: 52%;
+  height: 52%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  overflow: visible;
+}
+.bin__lid { transform-origin: 19px 6.5px; transition: transform 160ms var(--ease-out); }
+.lcd__bin.has-extras { opacity: .85; }
+.lcd__bin.is-ready { opacity: 1; transform: scale(1.08); }
+.lcd__bin.is-over {
+  opacity: 1;
+  transform: scale(1.2);
+  background: rgba(10, 12, 16, .72);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, .9), 0 0 18px rgba(255, 255, 255, .55);
+}
+.lcd__bin.is-over .bin__lid { transform: translateY(-1.5px) rotate(28deg); }
+.lcd__bin:active { transform: scale(.9); }
+.lcd__bin.is-gulp { animation: bin-gulp 360ms var(--ease-out); }
+.lcd__bin.is-nope { animation: bin-nope 320ms ease-in-out; }
+@keyframes bin-gulp { 0% { transform: scale(1.2); } 45% { transform: scale(.9); } 100% { transform: scale(1); } }
+@keyframes bin-nope { 20%, 60% { transform: translateX(-3px); } 40%, 80% { transform: translateX(3px); } }
+@media (prefers-reduced-motion: reduce) {
+  .lcd__bin.is-gulp, .lcd__bin.is-nope { animation: none; }
+}
+.lcd .selfie__loupe { z-index: 6; }   /* 放大鏡可以蓋過膠囊 */
+
+/* 說明下面的文字鈕：換背景。次要動作，不搶「修圖完成」 */
+.cam-bg {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid rgba(20, 22, 26, .22);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .55);
+  color: var(--text);
+  font: inherit;
+  font-size: 13.5px;
+  touch-action: manipulation;
+}
+.cam-bg[hidden] { display: none; }
+.cam-bg:disabled { opacity: .6; }

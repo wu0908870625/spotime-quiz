@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>版型對照｜SPOTIME QUIZ</title>
+<link rel="icon" href="assets/logo/spt_symbol.png">
+<style>
+  /* 這頁只是工具，不上線。index.html 放進 iframe 用真實像素寬高跑，
+     媒體查詢看到的是 iframe 的視窗大小，所以手機版真的會是手機版；
+     縮放只用 transform，不動 iframe 的 width/height，免得把斷點弄假。 */
+  :root {
+    --bar: 52px;
+    --ink: #e8eaee;
+    --dim: #8d939d;
+    --line: rgba(255, 255, 255, .14);
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: #16181d;
+    color: var(--ink);
+    font: 13px/1.5 "Inter", "Noto Sans TC", system-ui, sans-serif;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .bar {
+    flex: 0 0 auto;
+    height: var(--bar);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 14px;
+    border-bottom: 1px solid var(--line);
+    background: #1c1f25;
+  }
+  .bar strong { font-size: 12px; letter-spacing: .18em; color: var(--dim); margin-right: 6px; }
+
+  button {
+    height: 30px;
+    padding: 0 12px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--ink);
+    font: inherit;
+    cursor: pointer;
+    transition: border-color 150ms ease-out;
+  }
+  button:hover { border-color: rgba(255, 255, 255, .34); }
+  button[aria-pressed="true"] { background: #ff97ce; border-color: #ff97ce; color: #15161a; font-weight: 700; }
+  .bar .spacer { flex: 1 1 auto; }
+  .bar label { display: flex; align-items: center; gap: 6px; color: var(--dim); }
+
+  .deck {
+    flex: 1 1 auto;
+    display: flex;
+    gap: 34px;
+    align-items: flex-start;
+    justify-content: center;
+    overflow: auto;
+    padding: 26px 20px 40px;
+  }
+
+  figure { margin: 0; display: none; flex-direction: column; align-items: center; gap: 10px; }
+  figure.is-on { display: flex; }
+  figcaption { font-size: 11px; letter-spacing: .14em; color: var(--dim); }
+  figcaption::after { content: " · " attr(data-scale); opacity: .7; }
+
+  /* 外框吃縮放後的尺寸，裡面的 iframe 維持原始像素，版面才不會被壓歪 */
+  .shell { position: relative; }
+  .shell iframe {
+    display: block;
+    border: 0;
+    background: #d9dce0;
+    transform-origin: top left;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, .55);
+  }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <strong>版型對照</strong>
+  <button type="button" data-view="phone" aria-pressed="false">手機 9:16</button>
+  <button type="button" data-view="tall" aria-pressed="false">手機 加高</button>
+  <button type="button" data-view="desktop" aria-pressed="false">電腦</button>
+  <button type="button" data-view="both" aria-pressed="true">並排</button>
+  <span class="spacer"></span>
+  <label><input type="checkbox" id="fit" checked> 縮到看得完</label>
+  <label><input type="checkbox" id="each" checked> 手機維持原寸</label>
+  <button type="button" id="reload">兩邊都重整</button>
+</div>
+
+<div class="deck">
+  <figure data-frame="phone">
+    <div class="shell"><iframe title="手機 9:16" data-w="405" data-h="720"></iframe></div>
+    <figcaption>405 × 720（9:16）</figcaption>
+  </figure>
+  <figure data-frame="tall">
+    <div class="shell"><iframe title="手機 加高" data-w="402" data-h="874"></iframe></div>
+    <figcaption>402 × 874（iPhone 16 Pro）</figcaption>
+  </figure>
+  <figure data-frame="desktop">
+    <div class="shell"><iframe title="電腦" data-w="1440" data-h="900"></iframe></div>
+    <figcaption>1440 × 900</figcaption>
+  </figure>
+</div>
+
+<script>
+const VIEWS = { phone: ["phone"], tall: ["tall"], desktop: ["desktop"], both: ["phone", "desktop"] };
+const TARGET = "index.html";
+
+const deck = document.querySelector(".deck");
+const figures = [...document.querySelectorAll("figure")];
+const buttons = [...document.querySelectorAll("[data-view]")];
+const fit = document.querySelector("#fit");
+const each = document.querySelector("#each");
+let view = "both";
+
+/** iframe 的 src 只設一次，之後切換只改顯示，才不會每按一下就重跑一次開機動畫。 */
+function ensureLoaded(fig) {
+  const frame = fig.querySelector("iframe");
+  if (!frame.src) frame.src = TARGET;
+}
+
+function layout() {
+  const shown = VIEWS[view];
+  figures.forEach((fig) => {
+    const on = shown.includes(fig.dataset.frame);
+    fig.classList.toggle("is-on", on);
+    if (on) ensureLoaded(fig);
+  });
+
+  // 先量一次不縮放時要多寬，再決定倍率。gap 34 + 左右 padding 40。
+  const visible = figures.filter((f) => f.classList.contains("is-on"));
+  const room = deck.getBoundingClientRect();
+  const gaps = (visible.length - 1) * 34 + 40;
+  const needW = visible.reduce((n, f) => n + Number(f.querySelector("iframe").dataset.w), 0) + gaps;
+  const needH = Math.max(...visible.map((f) => Number(f.querySelector("iframe").dataset.h))) + 66;
+
+  // 兩個都套同一個倍率時，手機那邊會被電腦版拖著一起縮到看不清楚。
+  // 勾「手機維持原寸」就讓手機用 1:1，剩下的寬度全部讓給電腦版。
+  const phone = visible.find((f) => f.dataset.frame !== "desktop");
+  const desk = visible.find((f) => f.dataset.frame === "desktop");
+  const perFrame = each.checked && phone && desk;
+
+  const uniform = fit.checked ? Math.min(1, room.width / needW, room.height / needH) : 1;
+  const scaleOf = (f) => {
+    if (!perFrame) return uniform;
+    const w = Number(f.querySelector("iframe").dataset.w);
+    const h = Number(f.querySelector("iframe").dataset.h);
+    const roomH = Math.min(1, (room.height - 66) / h);
+    if (f === phone) return Math.min(1, roomH);
+    const left = room.width - gaps - Number(phone.querySelector("iframe").dataset.w) * scaleOf(phone);
+    return Math.max(0.3, Math.min(1, left / w, roomH));
+  };
+
+  visible.forEach((f) => {
+    const frame = f.querySelector("iframe");
+    const w = Number(frame.dataset.w);
+    const h = Number(frame.dataset.h);
+    const scale = scaleOf(f);
+    frame.style.width = `${w}px`;
+    frame.style.height = `${h}px`;
+    frame.style.transform = `scale(${scale})`;
+    const shell = f.querySelector(".shell");
+    shell.style.width = `${w * scale}px`;
+    shell.style.height = `${h * scale}px`;
+    f.querySelector("figcaption").dataset.scale = `${Math.round(scale * 100)}%`;
+  });
+}
+
+buttons.forEach((btn) => btn.addEventListener("click", () => {
+  view = btn.dataset.view;
+  buttons.forEach((b) => b.setAttribute("aria-pressed", String(b === btn)));
+  layout();
+}));
+
+fit.addEventListener("change", layout);
+each.addEventListener("change", layout);
+addEventListener("resize", layout);
+document.querySelector("#reload").addEventListener("click", () => {
+  figures.forEach((f) => {
+    const frame = f.querySelector("iframe");
+    if (frame.src) frame.src = TARGET;
+  });
+});
+
+layout();
+</script>
+</body>
+</html>

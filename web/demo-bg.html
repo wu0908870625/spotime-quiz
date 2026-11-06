@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>背景動畫 demo｜SPOTIME</title>
+<meta name="theme-color" content="#d9dce0">
+<link rel="icon" href="assets/logo/spt_symbol.png">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/base.css">
+<link rel="stylesheet" href="styles/metal.css">
+<link rel="stylesheet" href="styles/quiz.css">
+<style>
+  /* .halo-canvas 與 body.is-live 的規則在 styles/base.css，正式站也用同一份 */
+
+  .demo {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 22px;
+    min-height: 100svh;
+    padding: 24px 16px 140px;
+  }
+
+  .demo__title {
+    margin: 0;
+    font-size: clamp(19px, 5.2vw, 25px);
+    font-weight: 700;
+  }
+
+  .panel__row:first-child button[aria-pressed="true"] {
+    background: #15161a;
+    color: var(--k0);
+    border-color: transparent;
+    font-weight: 700;
+  }
+
+  /* 液態變形只對帶狀有效，圓球模式下直接關掉按鈕，不要讓人按了沒反應 */
+  .panel button[disabled] {
+    opacity: .38;
+    cursor: not-allowed;
+  }
+
+  .demo__hint {
+    margin: 0;
+    font-size: 13.5px;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  .demo__mock { width: min(100%, 420px); }
+
+  /* 控制面板：每一段動態分開關，才看得出來各自加了什麼 */
+  .panel {
+    position: fixed;
+    left: 50%;
+    bottom: 16px;
+    z-index: 2;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    width: min(94vw, 620px);
+    padding: 10px;
+    border: 1px solid var(--hairline);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, .84);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 8px 24px rgba(14, 18, 26, .18);
+  }
+
+  .panel__row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .panel button {
+    min-height: 38px;
+    padding: 6px 14px;
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-pill);
+    background: rgba(255, 255, 255, .9);
+    color: var(--muted);
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  .panel button[aria-pressed="true"] {
+    border-color: transparent;
+    background: var(--pink);
+    color: var(--k100);
+    font-weight: 700;
+  }
+
+  .panel__fps {
+    flex: 1 0 100%;
+    margin: 2px 0 0;
+    font-family: var(--font-latin);
+    font-size: 12px;
+    letter-spacing: .06em;
+    color: var(--muted);
+    text-align: center;
+  }
+</style>
+</head>
+<body class="is-live" data-metal="polished">
+
+<div class="sheen" aria-hidden="true"></div>
+<canvas class="halo-canvas" id="halo-canvas"></canvas>
+<div class="halo halo--a" aria-hidden="true"></div>
+<div class="halo halo--b" aria-hidden="true"></div>
+
+<main class="demo">
+  <h1 class="demo__title">背景點陣球・動態測試</h1>
+  <p class="demo__hint">上排選造型，下排逐項加減動態。<br>點畫面任何一處看擾動；開「游標磁吸」後移動滑鼠。</p>
+
+  <div class="demo__mock">
+    <div class="options">
+      <button class="option" type="button">演唱會</button>
+      <button class="option" type="button">棒球場</button>
+      <button class="option" type="button">拍貼機</button>
+      <button class="option" type="button">校園活動</button>
+    </div>
+  </div>
+</main>
+
+<div class="panel" id="panel">
+  <div class="panel__row">
+    <button type="button" data-metal="polished">高光澤銀</button>
+    <button type="button" data-metal="chrome">鉻</button>
+    <button type="button" data-metal="brushed">髮絲紋</button>
+  </div>
+  <div class="panel__row">
+    <button type="button" data-shape="sphere">圓球</button>
+    <button type="button" data-shape="ribbon">帶狀</button>
+    <button type="button" data-shape="both">球＋帶</button>
+    <button type="button" data-shape="static">靜態 PNG</button>
+  </div>
+  <div class="panel__row">
+    <button type="button" data-flag="spin">自轉</button>
+    <button type="button" data-flag="chrome">游動光源</button>
+    <button type="button" data-flag="wave">流動光帶</button>
+    <button type="button" data-flag="ripple">點擊擾動</button>
+    <button type="button" data-flag="fade">邊緣化開</button>
+    <button type="button" data-flag="liquid">液態變形</button>
+    <button type="button" data-flag="magnet">游標磁吸</button>
+  </div>
+  <p class="panel__fps" id="fps">FPS —</p>
+</div>
+
+<script type="module">
+import { createHalo, prefersReducedMotion } from "./scripts/halo-canvas.js";
+import { createSheen } from "./scripts/sheen.js";
+
+const canvas = document.querySelector("#halo-canvas");
+const panel = document.querySelector("#panel");
+const fpsEl = document.querySelector("#fps");
+
+/** 起手式就是 Jimmy 點名的那一組（自轉／游動光源／流動光帶／點擊擾動），
+   再加上這輪新做的「邊緣化開」。液態變形只掛在帶狀上。 */
+const START = {
+  spin: true, chrome: true, wave: true, ripple: true,
+  fade: true, liquid: true, magnet: false,
+};
+
+// demo 頁刻意忽略系統的「減少動態」設定，不然開了那個設定就什麼都看不到；
+// 正式站不會這樣做，會直接退回靜態 PNG。
+const halo = createHalo(canvas, { reducedMotion: false, shape: "sphere", flags: START });
+
+createSheen(document.querySelector(".sheen"));
+
+let live = true;
+
+function paint() {
+  const flags = halo.getFlags();
+  const shape = live ? halo.getShape() : "static";
+  const hasRibbon = shape === "ribbon" || shape === "both";
+
+  for (const btn of panel.querySelectorAll("button[data-metal]")) {
+    btn.setAttribute("aria-pressed", String(btn.dataset.metal === document.body.dataset.metal));
+  }
+  for (const btn of panel.querySelectorAll("button[data-shape]")) {
+    btn.setAttribute("aria-pressed", String(btn.dataset.shape === shape));
+  }
+  for (const btn of panel.querySelectorAll("button[data-flag]")) {
+    const key = btn.dataset.flag;
+    btn.disabled = key === "liquid" && !hasRibbon;
+    btn.setAttribute("aria-pressed", String(live && !btn.disabled && !!flags[key]));
+  }
+}
+
+function setLive(on) {
+  live = on;
+  document.body.classList.toggle("is-live", on);
+  canvas.hidden = !on;
+  halo.setMotion(on);
+  paint();
+}
+
+panel.addEventListener("click", (event) => {
+  const metalBtn = event.target.closest("button[data-metal]");
+  if (metalBtn) {
+    document.body.dataset.metal = metalBtn.dataset.metal;
+    paint();
+    return;
+  }
+
+  const shapeBtn = event.target.closest("button[data-shape]");
+  if (shapeBtn) {
+    if (shapeBtn.dataset.shape === "static") { setLive(false); return; }
+    if (!live) setLive(true);
+    halo.setShape(shapeBtn.dataset.shape);
+    paint();
+    return;
+  }
+
+  const btn = event.target.closest("button[data-flag]");
+  if (!btn || btn.disabled) return;
+  if (!live) setLive(true);
+  const key = btn.dataset.flag;
+  halo.setFlags({ [key]: !halo.getFlags()[key] });
+  paint();
+});
+
+paint();
+
+/** 每秒結算一次幀數。手機上要看的是這個數字，不是感覺。 */
+let frames = 0;
+let since = performance.now();
+function tick(now) {
+  frames += 1;
+  if (now - since >= 1000) {
+    fpsEl.textContent = `FPS ${Math.round((frames * 1000) / (now - since))}　DPR ${Math.min(window.devicePixelRatio || 1, 2)}　${window.innerWidth}×${window.innerHeight}`;
+    frames = 0;
+    since = now;
+  }
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+
+if (prefersReducedMotion()) {
+  fpsEl.insertAdjacentHTML("afterend",
+    '<p class="panel__fps">你的系統開了「減少動態」，正式站在這個設定下會直接用靜態圖。</p>');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,469 @@
+/* 上傳自拍。入口是相紙右上角的一顆小膠囊，不佔結果頁的版面——
+   存圖鈕和 email 還是要在第一個畫面（見 result.css 的 .slot 註解）。 */
+.selfie-cta {
+  position: absolute;
+  top: 26px;
+  right: 18px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 34px;
+  padding: 6px 12px 6px 10px;
+  border: 1px solid rgba(255, 255, 255, .5);
+  border-radius: var(--radius-pill);
+  background: rgba(14, 16, 22, .62);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  color: #fff;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  animation: selfie-cta-in 420ms var(--ease-out) both;
+}
+
+.selfie-cta[hidden] { display: none; }
+.selfie-cta svg { width: 16px; height: 16px; }
+.selfie-cta:active { transform: scale(.97); }
+
+@keyframes selfie-cta-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* 面板打開時整頁不能動：iOS 的回彈、LINE 內建瀏覽器的下拉關閉都靠 overscroll 觸發 */
+body.is-selfie-open { overflow: hidden; }
+html:has(body.is-selfie-open) { overscroll-behavior: none; }
+
+.selfie {
+  --sheet-dim: 1;                /* 面板往下滑時跟著變淡（sheet.js） */
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(6, 8, 12, calc(.7 * var(--sheet-dim)));
+}
+
+.selfie[hidden] { display: none; }
+
+.selfie__panel {
+  position: relative;
+  width: min(100%, 440px);
+  max-height: 94svh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 22px 18px calc(20px + env(safe-area-inset-bottom));
+  border-radius: 22px 22px 0 0;
+  /* 09-30 專家 B5：跟相機同一套鉻銀。上緣一道亮邊（光打在金屬邊上），
+     頂部一段拉絲漸層，往下收成淺銀；內容卡片維持白色，字才好讀 */
+  background:
+    linear-gradient(180deg, #f8f9fa 0, #dfe2e7 48px, #e8ebef 110px, #eef0f3 100%);
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, .35), inset 0 1px 0 rgba(255, 255, 255, .95);
+  /* backwards 不是 both：播完不能一直蓋著 transform，往下滑的時候才移得動 */
+  animation: selfie-up 320ms var(--ease-out) backwards;
+}
+
+.selfie__panel.is-grabbed { transition: none; }
+
+/* 握把：只有從這裡往下滑才會關面板，面板內容照常捲動 */
+.selfie__grab {
+  position: absolute;
+  top: 0;
+  left: 64px;
+  right: 64px;                   /* 右上角的 × 要按得到 */
+  z-index: 3;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  touch-action: none;
+  cursor: grab;
+}
+
+.selfie__grab i {
+  width: 38px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(20, 22, 26, .28);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .8);
+}
+
+@keyframes selfie-up {
+  from { transform: translateY(40px); opacity: 0; }
+  to   { transform: none; opacity: 1; }
+}
+
+@media (min-width: 640px) {
+  .selfie { align-items: center; }
+  .selfie__panel { border-radius: 22px; max-height: 92vh; }
+}
+
+.selfie__close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.selfie__step[hidden] { display: none; }
+
+.selfie__title {
+  margin: 0 0 6px;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.selfie__lead {
+  margin: 0 0 10px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.selfie__rules {
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.selfie__rules li {
+  position: relative;
+  padding: 10px 12px 10px 38px;
+  border-radius: 12px;
+  background: #fff;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.selfie__rules li[hidden] { display: none; }
+
+.selfie__rules li::before {
+  content: "";
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  margin-top: -8px;
+  border-radius: 50%;
+  background: #15161a url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4.2 8.3l2.4 2.4 5-5' fill='none' stroke='%23fff' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 16px no-repeat;
+}
+
+.selfie__small {
+  margin: 0 0 14px;
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: var(--muted);
+}
+
+.selfie__pick {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  cursor: pointer;
+}
+
+/* 檔案欄位藏起來，由 label 觸發。不用 display:none，iOS 舊版會點不動 */
+.selfie__file {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* 辨識工具下載進度：一條會跑的讀條，不秀百分比數字。
+   --k 由 flow.js 設 0～1；條上一道光一直掃，檔案很大時看起來也不像卡住。 */
+.selfie__prep {
+  margin: 12px 0 0;
+  transition: opacity 400ms var(--ease-out);
+}
+
+.selfie__prep[hidden] { display: none; }
+.selfie__prep[data-state="ready"] { opacity: .75; }
+
+.selfie__meter {
+  --k: 0;
+  position: relative;
+  height: 6px;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: rgba(21, 22, 26, .1);
+}
+
+.selfie__meter[hidden] { display: none; }
+
+.selfie__meter i {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #b9bdc4, #15161a 60%, #e0529c);
+  transform: scaleX(max(var(--k), .04));
+  transform-origin: left center;
+  transition: transform 320ms var(--ease-out);
+}
+
+.selfie__meter i::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, .7), rgba(255, 255, 255, 0));
+  animation: selfie-meter 1.2s linear infinite;
+}
+
+.selfie__prep[data-state="ready"] .selfie__meter i::after,
+.selfie__prep[data-state="failed"] .selfie__meter i::after { animation: none; opacity: 0; }
+.selfie__prep[data-state="failed"] .selfie__meter { display: none; }
+
+@keyframes selfie-meter {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(100%); }
+}
+
+.selfie__meter--busy {
+  width: min(70%, 260px);
+  margin: 12px auto 0;
+}
+
+.selfie__progress {
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.selfie__prep[data-state="failed"] .selfie__progress { color: #b3261e; }
+
+.selfie__skip {
+  display: block;
+  margin: 14px auto 0;
+  padding: 6px 10px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.selfie__skip[hidden] { display: none; }
+
+/* 分析中：照片上掃一道光 */
+.selfie__thumb {
+  position: relative;
+  width: min(70%, 260px);
+  margin: 14px auto 12px;
+  overflow: hidden;
+  border-radius: 14px;
+  background: #ddd;
+}
+
+.selfie__thumb img { display: block; width: 100%; }
+
+.selfie__scan {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 28%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, .55), rgba(255, 255, 255, 0));
+  animation: selfie-scan 1.4s ease-in-out infinite alternate;
+}
+
+@keyframes selfie-scan {
+  from { top: -28%; }
+  to   { top: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .selfie__scan { animation: none; top: 36%; }
+  .selfie__meter i::after { animation: none; }
+  .selfie__panel { animation: none; }
+}
+
+.selfie__busy {
+  margin: 0;
+  font-size: 14px;
+  text-align: center;
+  color: var(--muted);
+}
+
+/* 檢查結果 */
+.selfie__stage {
+  position: relative;            /* 放大鏡以它為基準定位 */
+  width: fit-content;            /* 跟著照片的形狀縮，直長照片不會把下面的按鈕擠出畫面 */
+  margin: 4px auto 8px;
+  padding: 7px 7px 20px;
+  background: #fcfcfb;
+  box-shadow: 0 10px 24px rgba(14, 18, 26, .28);
+}
+
+.selfie__canvas {
+  display: block;
+  /* 09-30 Jimmy 回報：直長的自拍（9:16 以上）整張攤開，「下一步」被推到畫面外找不到。
+     寬、高各給上限，瀏覽器會照比例縮到兩個都放得下 */
+  width: auto;
+  height: auto;
+  max-width: min(286px, calc(100vw - 50px));
+  max-height: min(46svh, 400px);
+  touch-action: none;            /* 拖貼片的時候不要捲動頁面 */
+  -webkit-touch-callout: none;   /* 長按不要跳出「儲存圖片」 */
+  user-select: none;
+  cursor: grab;
+}
+
+.selfie__canvas.is-dragging { cursor: grabbing; }
+
+/* 旋轉／還原。拇指要按得到，至少 44px */
+.selfie__tools {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin: 0 0 8px;
+}
+.selfie__tools[hidden] { display: none; }
+/* 相機實體按鍵的樣子：金屬漸層、上亮下暗，按下去往下沉一點、內陰影變深 */
+.selfie__tool {
+  min-width: 48px;
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid rgba(20, 22, 26, .2);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffffff 0%, #eceff3 45%, #c9ced6 100%);
+  box-shadow: inset 0 1px 0 #fff, inset 0 -1px 0 rgba(0, 0, 0, .1), 0 1px 2px rgba(14, 18, 26, .2);
+  color: var(--text);
+  font: inherit;
+  font-size: 22px;
+  line-height: 1;
+  touch-action: manipulation;    /* 連點不要被當成雙擊放大，才不會漏按（專家 M4） */
+  transition: transform 100ms ease-out, box-shadow 100ms ease-out;
+}
+.selfie__tool--text { font-size: 14px; }
+.selfie__tool:active {
+  transform: translateY(1px);
+  background: linear-gradient(180deg, #e3e6eb 0%, #d5d9df 100%);
+  box-shadow: inset 0 2px 4px rgba(14, 18, 26, .25), 0 0 0 rgba(0, 0, 0, 0);
+}
+
+/* 拖貼片時浮在手指上方的放大鏡（drag.js）。不吃觸控，手指底下的畫布才收得到移動 */
+.selfie__loupe {
+  position: absolute;
+  z-index: 2;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  box-shadow: 0 8px 22px rgba(14, 18, 26, .35), 0 0 0 1px rgba(14, 18, 26, .15);
+  pointer-events: none;
+  background: #fff;
+}
+.selfie__loupe[hidden] { display: none; }
+
+.selfie__hint {
+  margin: 0 0 10px;
+  font-size: 12.5px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.selfie__hint[hidden] { display: none; }
+
+.selfie__head {
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.selfie__head[data-tone="ok"] { text-align: center; }
+
+.selfie__issues {
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.selfie__issues li {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border-left: 3px solid #c9a227;
+  border-radius: 10px;
+  background: #fff;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.selfie__issues li[data-level="block"] { border-left-color: #b3261e; }
+.selfie__issues b { font-size: 14px; color: var(--text); }
+
+.selfie__buttons {
+  display: grid;
+  gap: 8px;
+  margin-top: 6px;
+  /* 保險：內容再長，主要按鈕也黏在面板底部，不用捲才找得到 */
+  position: sticky;
+  bottom: calc(-20px - env(safe-area-inset-bottom));
+  z-index: 2;
+  padding: 10px 0 calc(20px + env(safe-area-inset-bottom));
+  margin-bottom: calc(-20px - env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, rgba(238, 240, 243, 0), #eef0f3 14px);
+}
+
+.selfie__buttons [hidden] { display: none; }
+
+/* 校正畫面上的一句說明（例如脖子被擋住、先改貼臉頰） */
+.selfie__note {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-left: 3px solid #c9a94a;
+  border-radius: 10px;
+  background: #fff;
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+/* 結果頁換自拍：先檢查照片（貼片看得到、還不能拖），按「就用這張」才進調整造型貼位置（selfie/flow.js setTuning） */
+.selfie__stage.is-locked canvas { pointer-events: none; }
+
+/* 背景二選一（10-06 Jimmy）：預設去背換場景。選到的用深色，不用粉紅（粉紅一頁只出現一個地方） */
+.selfie__bg {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 4px;
+  border-radius: 999px;
+  background: rgba(20, 22, 26, .08);
+}
+.selfie__buttons .selfie__bg[hidden] { display: none; }
+.selfie__bg button {
+  min-height: 40px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13.5px;
+  touch-action: manipulation;
+  transition: background-color 160ms var(--ease-out), color 160ms var(--ease-out);
+}
+.selfie__bg button[aria-checked="true"] {
+  background: #14161a;
+  color: #fff;
+  font-weight: 700;
+}

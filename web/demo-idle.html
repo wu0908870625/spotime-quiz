@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>待機畫面 demo｜SPOTIME</title>
+<meta name="theme-color" content="#d9dce0">
+<link rel="icon" href="assets/logo/spt_symbol.png">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/base.css">
+<link rel="stylesheet" href="styles/metal.css">
+<link rel="stylesheet" href="styles/camera.css">
+<link rel="stylesheet" href="styles/idle.css">
+<link rel="stylesheet" href="styles/quiz.css">
+<style>
+  .demo {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    min-height: 100svh;
+    padding: 24px 16px 150px;
+  }
+
+  .demo__title { margin: 0; font-size: clamp(19px, 5.2vw, 25px); font-weight: 700; }
+
+  .demo__hint {
+    margin: 0;
+    max-width: 460px;
+    font-size: 13.5px;
+    line-height: 1.7;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  .panel {
+    position: fixed;
+    left: 50%;
+    bottom: 16px;
+    z-index: 2;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    width: min(94vw, 620px);
+    padding: 10px;
+    border: 1px solid var(--hairline);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, .84);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 8px 24px rgba(14, 18, 26, .18);
+  }
+
+  .panel__row { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; width: 100%; }
+
+  .panel button {
+    min-height: 38px;
+    padding: 6px 14px;
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-pill);
+    background: rgba(255, 255, 255, .9);
+    color: var(--muted);
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  .panel button[aria-pressed="true"] {
+    border-color: transparent;
+    background: var(--pink);
+    color: var(--k100);
+    font-weight: 700;
+  }
+
+  .panel__note { margin: 2px 0 0; font-size: 12px; color: var(--muted); text-align: center; }
+</style>
+</head>
+<body data-metal="polished">
+
+<div class="sheen" aria-hidden="true"></div>
+<div class="halo halo--a" aria-hidden="true"></div>
+<div class="halo halo--b" aria-hidden="true"></div>
+
+<main class="demo">
+  <h1 class="demo__title">選場景前的螢幕・四個方案</h1>
+  <p class="demo__hint">這是 Q「這個週末想去哪走走」還沒作答時 LCD 的樣子。
+    人物是去背的情侶，會動的是他們後面那一層。</p>
+
+  <div class="camera">
+    <img class="camera__body" src="assets/camera/ccd_back.webp" alt="" draggable="false">
+    <div class="lcd is-idle" id="lcd" data-idle="logo">
+      <div class="lcd__idle" aria-hidden="true">
+        <i class="idle__bars"></i>
+        <i class="idle__logo"></i>
+        <i class="idle__snow"></i>
+        <i class="idle__roll"></i>
+        <i class="idle__scan"></i>
+      </div>
+      <div class="lcd__frame">
+        <img class="layer layer--person is-on" src="assets/person/idle.webp" alt="" draggable="false">
+      </div>
+      <div class="lcd__grain" aria-hidden="true"></div>
+      <div class="lcd__hud" aria-hidden="true">
+        <span class="hud__rec"><i></i>REC</span>
+        <span class="hud__count">[ <b>2</b> ]</span>
+        <span class="hud__date">'26 12 01</span>
+        <b class="hud__corner hud__corner--tl"></b>
+        <b class="hud__corner hud__corner--tr"></b>
+        <b class="hud__corner hud__corner--bl"></b>
+        <b class="hud__corner hud__corner--br"></b>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="panel" id="panel">
+  <div class="panel__row">
+    <button type="button" data-idle="logo">A 滿版 logo 流動</button>
+    <button type="button" data-idle="snow">B 訊號雜訊</button>
+    <button type="button" data-idle="mix">C logo ＋ 雜訊</button>
+    <button type="button" data-idle="bars">D 色條測試卡</button>
+    <button type="button" data-idle="none">現況（純黑）</button>
+  </div>
+  <div class="panel__row">
+    <button type="button" data-metal="polished">高光澤銀</button>
+    <button type="button" data-metal="chrome">鉻</button>
+    <button type="button" data-metal="brushed">髮絲紋</button>
+  </div>
+  <p class="panel__note">四個方案的掃描線與暗角是共用的，差別只在底下那一層放什麼。</p>
+</div>
+
+<script type="module">
+import { createSheen } from "./scripts/sheen.js";
+
+const lcd = document.querySelector("#lcd");
+const panel = document.querySelector("#panel");
+
+createSheen(document.querySelector(".sheen"));
+
+function paint() {
+  for (const btn of panel.querySelectorAll("button[data-idle]")) {
+    btn.setAttribute("aria-pressed", String(btn.dataset.idle === lcd.dataset.idle));
+  }
+  for (const btn of panel.querySelectorAll("button[data-metal]")) {
+    btn.setAttribute("aria-pressed", String(btn.dataset.metal === document.body.dataset.metal));
+  }
+}
+
+panel.addEventListener("click", (event) => {
+  const btn = event.target.closest("button");
+  if (!btn) return;
+  if (btn.dataset.idle) lcd.dataset.idle = btn.dataset.idle;
+  if (btn.dataset.metal) document.body.dataset.metal = btn.dataset.metal;
+  paint();
+});
+
+paint();
+</script>
+</body>
+</html>

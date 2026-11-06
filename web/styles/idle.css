@@ -1,0 +1,138 @@
+/* 還沒選場景時，LCD 空白處要放什麼。
+   四個方案掛在 .lcd 的 data-idle 上，demo-idle.html 可以現場切換。
+   共同前提：不管放什麼，都要看得出「這是螢幕上顯示的東西」，
+   所以掃描線、暗角、微微的滾動一律疊在最上面，而不是只換一張底圖。 */
+
+.lcd__idle {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--dur-base) var(--ease-out);
+}
+
+/* 只有還沒選場景時才出現。選了場景就是照片，不該再有訊號感 */
+.lcd.is-idle .lcd__idle { opacity: 1; }
+
+.lcd__idle > i {
+  position: absolute;
+  display: none;
+}
+
+/* ── 滿版 logo：底圖本身無縫，斜角交給 rotate，流動靠 background-position ── */
+.idle__logo {
+  inset: -45%;
+  background-image: url("../assets/bg/logo_tile.png");
+  background-size: 280px auto;
+  background-repeat: repeat;
+  transform: rotate(-11deg);
+  opacity: .20;
+  animation: idle-logo-drift 34s linear infinite;
+}
+
+@keyframes idle-logo-drift {
+  /* 走滿一個圖塊寬就回到原點，看起來是無限流動。
+     只動 x：圖樣本身已經轉了 -11 度，沿著 x 走就是沿著字的方向走 */
+  from { background-position: 0 0; }
+  to   { background-position: 280px 0; }
+}
+
+/* ── 雜訊：一張亂數貼圖，用 steps 每幀跳一個位置，等於動態雪花 ── */
+.idle__snow {
+  inset: -30%;
+  background-image: url("data:image/svg+xml;utf8,\
+<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'>\
+<filter id='s'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/></filter>\
+<rect width='160' height='160' filter='url(%23s)'/></svg>");
+  opacity: .52;
+  animation: idle-snow 480ms steps(1, end) infinite;
+}
+
+@keyframes idle-snow {
+  0%   { transform: translate3d(0, 0, 0); }
+  20%  { transform: translate3d(-7%, 4%, 0); }
+  40%  { transform: translate3d(5%, -6%, 0); }
+  60%  { transform: translate3d(-3%, -2%, 0); }
+  80%  { transform: translate3d(8%, 5%, 0); }
+  100% { transform: translate3d(0, 0, 0); }
+}
+
+/* ── 垂直同步沒鎖住的那條亮帶，從下往上緩慢跑 ── */
+.idle__roll {
+  left: 0;
+  width: 100%;
+  height: 26%;
+  background: linear-gradient(to bottom,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, .05) 42%,
+    rgba(255, 255, 255, .10) 50%,
+    rgba(255, 255, 255, .04) 60%,
+    rgba(255, 255, 255, 0) 100%);
+  animation: idle-roll 7.5s linear infinite;
+}
+
+@keyframes idle-roll {
+  from { top: 100%; }
+  to   { top: -26%; }
+}
+
+/* ── 掃描線與暗角。這兩層是「它在螢幕上」的關鍵，四個方案都要 ── */
+.idle__scan {
+  inset: 0;
+  background:
+    repeating-linear-gradient(to bottom,
+      rgba(0, 0, 0, .30) 0 1px,
+      rgba(0, 0, 0, 0) 1px 3px),
+    radial-gradient(120% 100% at 50% 45%,
+      rgba(255, 255, 255, .05) 0%,
+      rgba(0, 0, 0, 0) 55%,
+      rgba(0, 0, 0, .45) 100%);
+  mix-blend-mode: multiply;
+}
+
+/* multiply 會把中央的微光也吃掉，所以中央的光單獨一層 */
+.idle__scan::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(90% 70% at 50% 38%,
+    rgba(190, 205, 225, .10) 0%, rgba(0, 0, 0, 0) 70%);
+  mix-blend-mode: screen;
+}
+
+/* ── 色條測試卡 ── */
+.idle__bars {
+  inset: 0;
+  background: linear-gradient(to right,
+    #b9bcc2 0 14.28%, #b9b34e 14.28% 28.57%, #4eb0b9 28.57% 42.85%,
+    #4eb95f 42.85% 57.14%, #b94eae 57.14% 71.42%, #b95050 71.42% 85.71%,
+    #4e5ab9 85.71% 100%);
+  opacity: .30;
+}
+
+/* ── 四個方案各自打開哪幾層 ── */
+.lcd[data-idle="logo"]  .idle__logo,
+.lcd[data-idle="logo"]  .idle__scan,
+.lcd[data-idle="mix"]   .idle__logo,
+.lcd[data-idle="mix"]   .idle__snow,
+.lcd[data-idle="mix"]   .idle__roll,
+.lcd[data-idle="mix"]   .idle__scan,
+.lcd[data-idle="snow"]  .idle__snow,
+.lcd[data-idle="snow"]  .idle__roll,
+.lcd[data-idle="snow"]  .idle__scan,
+.lcd[data-idle="bars"]  .idle__bars,
+.lcd[data-idle="bars"]  .idle__roll,
+.lcd[data-idle="bars"]  .idle__scan { display: block; }
+
+/* mix 方案的雜訊只是把 logo 壓進螢幕裡，不能搶戲 */
+.lcd[data-idle="mix"] .idle__snow { opacity: .14; }
+.lcd[data-idle="mix"] .idle__logo { opacity: .20; }
+
+/* 純雜訊方案底色要抬高一點，雪花才有東西可以亮——全黑的話只剩暗暗的顆粒 */
+.lcd[data-idle="snow"].is-idle { background: #101116; }
+
+@media (prefers-reduced-motion: reduce) {
+  .idle__logo, .idle__snow, .idle__roll { animation: none; }
+  .idle__roll { display: none !important; }
+}

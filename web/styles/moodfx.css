@@ -1,0 +1,111 @@
+/* 心情題選完的特效（scripts/moodfx.js）。粒子都不吃觸控，不會擋到下一題的按鈕 */
+.moodfx {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 60;
+  font-style: normal;
+  font-size: 26px;
+  line-height: 1;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+/* float：從按鈕飄到螢幕上 */
+.moodfx--float {
+  animation: moodfx-float 1300ms var(--d, 0ms) cubic-bezier(.2, .7, .3, 1) both;
+}
+@keyframes moodfx-float {
+  0%   { opacity: 0; transform: translate(var(--x0), var(--y0)) translate(-50%, -50%) scale(.4); }
+  15%  { opacity: 1; }
+  70%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--x1), var(--y1)) translate(-50%, -50%) scale(var(--s)); }
+}
+
+/* burst：從按鈕往四周噴開 */
+.moodfx--burst {
+  animation: moodfx-burst 750ms cubic-bezier(.15, .8, .3, 1) both;
+}
+@keyframes moodfx-burst {
+  0%   { opacity: 1; transform: translate(var(--x0), var(--y0)) translate(-50%, -50%) scale(.3); }
+  60%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--x0), var(--y0)) translate(-50%, -50%) translate(var(--dx), var(--dy)) scale(var(--s)); }
+}
+
+/* weather：在相機螢幕裡面，座標用百分比 */
+.lcd .moodfx {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  z-index: 6;
+  font-size: calc(22px * var(--s));
+}
+.moodfx--drift   { animation: moodfx-drift 1600ms var(--d) ease-out both; }
+.moodfx--twinkle { animation: moodfx-twinkle 1200ms var(--d) ease-in-out both; }
+.moodfx--rise    { animation: moodfx-rise 1500ms var(--d) ease-out both; }
+.moodfx--rain    { top: -8%; animation: moodfx-rain 900ms var(--d) cubic-bezier(.5, 0, 1, 1) both; }
+@keyframes moodfx-drift {
+  0%   { opacity: 0; transform: translateX(-30px); }
+  25%  { opacity: .95; }
+  100% { opacity: 0; transform: translateX(40px); }
+}
+@keyframes moodfx-twinkle {
+  0%, 100% { opacity: 0; transform: scale(.2) rotate(0deg); }
+  40%      { opacity: 1; transform: scale(1.1) rotate(25deg); }
+  70%      { opacity: .6; transform: scale(.8) rotate(40deg); }
+}
+@keyframes moodfx-rise {
+  0%   { opacity: 0; transform: translateY(30px) scale(.5); }
+  30%  { opacity: 1; transform: translateY(0) scale(1.1); }
+  100% { opacity: 0; transform: translateY(-60px) scale(.9); }
+}
+@keyframes moodfx-rain {
+  0%   { opacity: 0; transform: translateY(0); }
+  15%  { opacity: .9; }
+  100% { opacity: 0; transform: translateY(520%); }
+}
+
+/* pop：相機螢幕正中間一個大 emoji，彈出來、停一下、縮掉。有「出場」的衝量才給回彈 */
+.lcd .moodfx--pop {
+  left: 50%;
+  top: 46%;
+  font-size: clamp(64px, 26vw, 120px);
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, .35));
+  animation: moodfx-pop 880ms cubic-bezier(.2, .9, .3, 1) both;
+}
+@keyframes moodfx-pop {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(.2) rotate(-12deg); }
+  28%  { opacity: 1; transform: translate(-50%, -50%) scale(1.12) rotate(4deg); }
+  42%  { transform: translate(-50%, -50%) scale(.96) rotate(0deg); }
+  72%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -62%) scale(.6); }
+}
+
+/* osd：相機系統字。等寬字、黑底白字，閃兩下再收，像按了相機上的模式鍵 */
+.lcd .moodfx--osd {
+  left: 50%;
+  top: 50%;
+  display: flex;
+  align-items: center;
+  gap: .6em;
+  padding: .6em .9em;
+  border: 1px solid rgba(255, 255, 255, .7);
+  background: rgba(8, 10, 14, .72);
+  /* 跟著螢幕大小走（10-01：手機上螢幕變小，固定 13px 就顯得太大）。.lcd 是 container，cqw 對螢幕寬 */
+  font: 700 clamp(8px, 4.6cqw, 13px)/1 var(--font-mono, ui-monospace, monospace);
+  letter-spacing: .14em;
+  color: #fff;
+  white-space: nowrap;
+  animation: moodfx-osd 980ms steps(1, end) both;
+}
+.lcd .moodfx--osd span { opacity: .7; }
+.lcd .moodfx--osd b { font-size: 1.15em; }
+@keyframes moodfx-osd {
+  0%   { opacity: 1; transform: translate(-50%, -50%); }
+  12%  { opacity: 0; }
+  20%  { opacity: 1; }
+  32%  { opacity: 0; }
+  40%  { opacity: 1; }
+  88%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -50%); }
+}

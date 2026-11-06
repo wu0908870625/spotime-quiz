@@ -1,0 +1,539 @@
+/* 結果頁：拍貼機出片 → 稀有度 → 兩個動作 */
+.result {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: min(100%, 420px);
+}
+
+.result.is-on { display: flex; }
+
+/* 出片口：相紙從這裡被推出來。主角是圖，但**存圖鈕和 email 欄要在第一個畫面**。
+
+   09-29 Jimmy 在 IG 站內瀏覽器實測：相紙照寬度撐滿，底下的存圖鈕被切一半、
+   email 整個在畫面外。所以相紙寬度同時受「高度」限制：
+     相紙以下要留 --below（稀有度三行 + 存圖鈕 + email 列 + 間距 ≈ 260px），
+     相紙高度 ＝ (寬 − 18) × 1.25 + 39，反推寬度上限 ≈ 0.8 × 可用高度 − 221。
+   用 svh（工具列展開時的最小高度），IG／LINE 的上下兩條列才不會吃掉按鈕。
+   最窄 200px，再矮的螢幕寧可讓 email 滑一下，也不要圖小到看不清楚。 */
+.slot {
+  position: relative;
+  width: clamp(200px, calc(80svh - 221px), min(90vw, 390px));
+  overflow: hidden;
+  padding-top: 8px;
+}
+
+.paper {
+  position: relative;
+  margin: 0;
+  padding: 9px 9px 30px;
+  background: #fcfcfb;
+  box-shadow: 0 16px 38px rgba(14, 18, 26, .42), 0 2px 6px rgba(14, 18, 26, .2);
+  transform: translateY(102%);
+}
+
+.paper.is-out {
+  animation: paper-out 900ms var(--ease-out) forwards;
+}
+
+@keyframes paper-out {
+  from { transform: translateY(102%); }
+  to   { transform: translateY(0); }
+}
+
+.paper__img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  background: #111;
+}
+
+.paper__caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 9px;
+  text-align: center;
+  font-family: var(--font-latin);
+  font-size: 10px;
+  letter-spacing: .2em;
+  color: #9a9ba0;
+}
+
+/* 稀有度 */
+.verdict {
+  text-align: center;
+  /* 大標題 + 比例那句 + 英文短句。先佔位，字打出來時整頁才不會往下跳。
+     104 是三行打完之後的實際高度，多留會把按鈕推出第一個畫面 */
+  min-height: 104px;
+}
+
+.verdict__title {
+  margin: 0 0 6px;
+  font-family: var(--font-latin);
+  font-size: clamp(26px, 7.4vw, 32px);
+  font-weight: 700;
+  letter-spacing: -.01em;
+  color: var(--text);
+}
+
+
+.verdict__title::after {
+  content: "";
+  display: inline-block;
+  width: .08em;
+  height: 1em;
+  margin-left: .1em;
+  vertical-align: -.12em;
+  background: var(--pink);
+  animation: caret 800ms steps(1, end) infinite;
+}
+
+.verdict__title.is-typed::after { display: none; }
+
+@keyframes caret { 50% { opacity: 0; } }
+
+.verdict__line {
+  margin: 0 0 8px;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+
+/* 英文短句。它不報稀有度、只講態度，但它是這一頁視覺上最有個性的一行，
+   所以給它拉丁字型、比中文那句重，並且用蓋章的方式出現。 */
+.verdict__tag {
+  display: inline-block;
+  margin: 0;
+  font-family: var(--font-latin);
+  font-size: clamp(15px, 4.2vw, 17px);
+  font-weight: 700;
+  letter-spacing: -.005em;
+  line-height: 1.35;
+  color: var(--text);
+  opacity: 0;
+  transform: scale(1.18) rotate(-2.5deg);
+}
+
+.verdict__tag.is-on { animation: tag-stamp 420ms var(--ease-out) forwards; }
+
+@keyframes tag-stamp {
+  0%   { opacity: 0; transform: scale(1.18) rotate(-2.5deg); }
+  60%  { opacity: 1; transform: scale(.97) rotate(.5deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .verdict__tag.is-on { animation: none; opacity: 1; transform: none; }
+}
+
+/* 動作區。按鈕比之前小一號，視覺重量讓給上面那張圖。 */
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity var(--dur-base) var(--ease-out),
+              transform var(--dur-base) var(--ease-out);
+}
+
+.actions.is-on { opacity: 1; transform: none; }
+
+.btn {
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease-out),
+              background var(--dur-fast) var(--ease-out);
+}
+
+.btn:active { transform: scale(.98); }
+
+.btn--primary {
+  background: #15161a;
+  color: var(--k0);
+  box-shadow: 0 6px 16px rgba(14, 18, 26, .28);
+}
+
+.btn--ghost {
+  background: rgba(255, 255, 255, .8);
+  border-color: var(--hairline);
+  color: var(--text);
+  font-weight: 500;
+}
+
+/* 09-30 Jimmy：IG 彩色漸層跟網站的銀黑風格差太多、很搶。改成白底黑字的次要鈕，
+   只靠 IG 的線條圖示認出來 */
+.btn--ig {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, .86);
+  border-color: var(--hairline);
+  color: var(--text);
+  text-decoration: none;
+}
+.btn--ig svg { width: 18px; height: 18px; }
+.btn--ig[hidden] { display: none; }
+
+/* 用範例臉的人第一次按發限動：先問要不要換成自己的臉（scripts/result.js） */
+.faceask {
+  padding: 14px 14px 12px;
+  border: 1px solid var(--hairline);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, .86);
+  animation: selfie-cta-in 320ms var(--ease-out) both;
+}
+.faceask[hidden] { display: none; }
+.faceask__text {
+  margin: 0 0 10px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text);
+  text-align: left;
+}
+.faceask__btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.faceask__btns .btn { padding-inline: 10px; }
+
+/* 結果頁唯一的分享鈕：黑底主要鈕＋IG 線條圖示；上面一行固定文案 */
+.actions__lead {
+  margin: 0;
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+}
+.btn--primary.btn--ig {
+  background: #15161a;
+  border-color: transparent;
+  color: var(--k0);
+}
+
+/* 發限動的引導條：浮在最上面，系統分享面板打開時還看得到。兩步都列出來，做到哪步亮哪步 */
+.igguide {
+  position: fixed;
+  top: calc(10px + env(safe-area-inset-top));
+  left: 50%;
+  z-index: 80;
+  width: min(calc(100% - 24px), 420px);
+  transform: translateX(-50%);
+  display: grid;
+  gap: 10px;
+  padding: 14px 44px 14px 14px;
+  border-radius: 16px;
+  background: rgba(21, 22, 26, .94);
+  color: #fff;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .35);
+  animation: igguide-in 260ms var(--ease-out) backwards;
+}
+.igguide[hidden] { display: none; }
+.igguide.is-leaving { animation: igguide-out 180ms ease-in forwards; }
+.igguide__steps {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.igguide__step {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 14px;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, .45);
+  transition: color 200ms ease-out;
+}
+.igguide__step.is-now { color: #fff; }
+.igguide__step.is-done { color: rgba(255, 255, 255, .7); }
+.igguide__step b {
+  position: relative;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  margin-top: 1px;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+  font-size: 12px;
+  font-style: normal;
+}
+.igguide__step b i { font-style: normal; }
+.igguide__step.is-now b { background: #fff; border-color: #fff; color: #15161a; }
+.igguide__step b svg { position: absolute; inset: 2px; width: 15px; height: 15px; margin: auto; display: none; }
+.igguide__step.is-done b { background: #fff; border-color: #fff; color: #15161a; }
+.igguide__step.is-done b i { display: none; }
+.igguide__step.is-done b svg { display: block; }
+.igguide__open {
+  justify-self: start;
+  margin-left: 32px;
+  min-height: 40px;
+  background: #fff;
+  color: #15161a;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+.igguide__open[hidden] { display: none; }
+.igguide__close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  background: none;
+  color: rgba(255, 255, 255, .7);
+  font-size: 22px;
+  cursor: pointer;
+}
+@keyframes igguide-in {
+  from { opacity: 0; transform: translate(-50%, -12px); }
+}
+@keyframes igguide-out {
+  to { opacity: 0; transform: translate(-50%, -12px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .igguide, .igguide.is-leaving { animation: none; }
+}
+
+/* email 區。頁面不寫折扣誘因，只說會寄什麼。 */
+.signup { width: 100%; }
+
+.signup__row {
+  display: flex;
+  gap: 8px;
+}
+
+.signup__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, .8);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+}
+
+.signup__input::placeholder { color: var(--muted); }
+.signup__input:focus {
+  outline: none;
+  border-color: #1f2430;
+  background: #fff;
+}
+
+.signup__submit {
+  flex: 0 0 auto;
+  padding: 10px 20px;
+}
+
+.signup__note {
+  margin: 8px 2px 0;
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--muted);
+  text-align: left;
+}
+
+.signup__status {
+  margin: 6px 2px 0;
+  font-size: 12.5px;
+  min-height: 18px;
+}
+
+.signup__status[data-tone="error"] { color: #b3261e; }
+.signup__status[data-tone="ok"] { color: #c3357f; }
+
+.signup.is-done .signup__row { display: none; }
+
+/* 填完 email 之後才出現的上市預告（10-02 Jimmy） */
+.signup__launch {
+  display: none;
+  margin: 4px 2px 0;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  color: var(--ink, #14161a);
+}
+.signup.is-done .signup__launch { display: block; }
+/* 送出後只剩兩行字，跟上面的標題、分享鈕一樣置中（10-02 盲測：靠左看起來沒對齊） */
+.signup.is-done .signup__status,
+.signup.is-done .signup__launch { text-align: center; }
+
+.restart {
+  margin: 0 auto;
+  padding: 6px 4px;
+  border: 0;
+  background: none;
+  font-size: 12.5px;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.restart:active { color: var(--text); }
+
+/* IG 內開瀏覽器下載會失敗，改成全螢幕長按儲存 */
+.saveover {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 24px;
+  /* 09-30 專家 M6：底下結果頁的字會透出來、跟提示疊在一起。
+     加模糊把底層糊成一片，字就不會跟提示搶；底層同時設 inert（save.js） */
+  background: rgba(8, 9, 12, .8);
+  -webkit-backdrop-filter: blur(16px) saturate(120%);
+  backdrop-filter: blur(16px) saturate(120%);
+}
+
+.saveover__close {
+  position: absolute;
+  top: calc(10px + env(safe-area-inset-top));
+  right: 10px;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .12);
+  color: #fff;
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.saveover.is-on { display: flex; }
+
+.saveover img {
+  max-width: min(84vw, 360px);
+  max-height: 64vh;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .7);
+}
+
+.saveover__ig { min-width: 220px; }
+.saveover p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--k20);
+  text-align: center;
+}
+
+
+/* 桌機：相紙放左邊、文字與動作放右邊，不要讓兩側空著 */
+@media (min-width: 880px) and (min-height: 560px) {
+  .result {
+    display: none;
+    grid-template-columns: auto minmax(320px, 400px);
+    /* 右欄兩列各自貼齊內容，整組再一起垂直置中；
+       不這樣做的話兩列會被左邊的相紙撐開，文字和按鈕中間裂一大塊空白 */
+    grid-template-rows: max-content max-content;
+    align-content: center;
+    justify-items: center;
+    /* gap 會同時吃到列，右欄的標題和按鈕之間會裂開，所以分開寫 */
+    column-gap: clamp(36px, 6vw, 80px);
+    row-gap: 14px;
+    width: 100%;
+    max-width: 1040px;
+  }
+
+  .result.is-on { display: grid; }
+
+  .slot {
+    grid-row: span 2;
+    justify-self: end;
+    width: min(38vw, 430px);
+  }
+
+  .verdict {
+    justify-self: start;
+    align-self: end;
+    text-align: left;
+    width: 100%;
+    min-height: 0;
+    padding-bottom: 4px;
+  }
+
+  .actions {
+    justify-self: start;
+    align-self: start;
+  }
+}
+
+/* 出片 demo（printfx.js，?demo=print）。
+   快門：螢幕定格 → 快速黑掉 → 亮回來（不是閃白光）。黑掉的那層借用 .lcd__flash */
+.lcd.is-blackout .lcd__flash { background: #000; animation: lcd-blackout 300ms linear both; }
+@keyframes lcd-blackout {
+  0%   { opacity: 0; }
+  12%  { opacity: 1; }
+  40%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* 相機吐出來的那張相紙（printfx.js eject）：排在機身圖後面，從機身上緣被推出來 */
+.paper.eject {
+  position: absolute;
+  top: 4%;
+  z-index: 0;
+  padding: 6px 6px 20px;
+  transform: none;
+  box-shadow: 0 6px 16px rgba(14, 18, 26, .3);
+}
+.paper.eject .paper__caption { bottom: 5px; font-size: 7px; }
+/* 飛到結果頁的替身：以左上角為基準放大，位置才對得上 */
+.paper.eject--flying {
+  position: fixed;
+  z-index: 55;
+  transform-origin: 0 0;
+  pointer-events: none;
+}
+.quiz.is-printing .question { opacity: 0; transition: opacity 160ms ease-in; }
+
+
+/* 結果頁減法（09-30 Jimmy 覺得太花，看過 demo 後定案）。
+   1.「My SPOTIME」大標留著；英文短句放大排在它下面，比例那句降成小字
+   2.「換成我的自拍」從相片上拿下來，改成相紙下面一行小字連結，不蓋住照片
+   3. email 說明縮成一行
+   背景網點與光暈不調淡（Jimmy 要留） */
+.verdict { display: grid; gap: 4px; justify-items: center; }
+.verdict__title { margin-bottom: 2px; }
+.verdict__tag { order: 1; font-size: clamp(18px, 5vw, 21px); }
+.verdict__line { order: 2; margin: 0; font-size: 12.5px; }
+/* 放在 .verdict 最上面（不放在 .slot 裡：slot 會裁掉相紙的陰影，裁出一塊灰框） */
+.verdict .selfie-cta {
+  order: -1;
+  position: static;
+  margin: 0 0 4px;
+  min-height: 32px;
+  padding: 4px 8px;
+  border: 0;
+  background: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.signup__note { font-size: 11.5px; }
+
+/* 從「換成我的自拍」修完回來：IG 鈕輕輕跳兩下，告訴人下一步在這（result.js 的 is-nudge） */
+.btn--ig.is-nudge { animation: ig-nudge 1.4s 300ms var(--ease-out) 2; }
+@keyframes ig-nudge {
+  0%, 60%, 100% { transform: none; }
+  20%           { transform: translateY(-5px) scale(1.03); }
+  40%           { transform: translateY(0) scale(.99); }
+}
+@media (prefers-reduced-motion: reduce) { .btn--ig.is-nudge { animation: none; } }

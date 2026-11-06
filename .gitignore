@@ -1,0 +1,14 @@
+# --- 2026-11-06 GitHub 同步：機密與暫存不上傳 ---
+.DS_Store
+node_modules/
+.venv/
+venv/
+__pycache__/
+.wrangler/
+.env
+.env.*
+.dev.vars
+.secrets/
+sa-key.json
+*.log
+backups/
