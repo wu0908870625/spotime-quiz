@@ -87,7 +87,7 @@ export function logAnswer(comboKey, answers, visit, seconds = null) {
     // steps：到結果頁為止還沒送的漏斗步驟（funnel.js），/api 收下來就拿掉，不會轉給 Google
     body: JSON.stringify({ ...answerPayload(comboKey, answers, visit), mood: answers.mood ?? "", seconds: seconds ?? "", steps: drain() }),
     keepalive: true,
-    redirect: "manual",     // 轉址之前資料就寫進去了，後面那頁不用拿（見 signup.js）
+    redirect: "manual",     // 轉址之前資料就寫進去了，後面那頁不用拿
   }).catch((error) => console.warn("作答沒記錄到", error));
 }
 

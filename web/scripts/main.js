@@ -16,7 +16,6 @@ import { createResult } from "./result.js";
 import { createShutter } from "./shutter.js";
 import { createTilt } from "./tilt.js";
 import { createSelfieFlow } from "./selfie/flow.js";
-import { prefetchStats } from "./stats.js";
 import { FINALE, HIDDEN_SHAPES, INTRO, QUESTIONS } from "./config.js";
 
 const KEEP_WAIT_MS = 2000;      // 再測一次前存自拍最多等多久
@@ -46,7 +45,6 @@ const els = {
   paperCaption: document.querySelector("#paper-caption"),
   verdictTitle: document.querySelector("#verdict-title"),
   verdictTag: document.querySelector("#verdict-tag"),
-  verdictLine: document.querySelector("#verdict-line"),
   actions: document.querySelector("#actions"),
   igStory: document.querySelector("#ig-story"),
   faceAsk: {
@@ -62,9 +60,7 @@ const els = {
     close: document.querySelector("#igguide-close"),
   },
   restart: document.querySelector("#restart"),
-  signup: document.querySelector("#signup"),
-  email: document.querySelector("#email"),
-  signupStatus: document.querySelector("#signup-status"),
+  lineOa: document.querySelector("#line-oa"),
 
   saveover: document.querySelector("#saveover"),
   saveoverImg: document.querySelector("#saveover-img"),
@@ -138,7 +134,7 @@ async function boot() {
   document.addEventListener("touchstart", () => {}, { passive: true });
   const loader = createLoader(els.loader, { onFadeStart: markBooted });
   els.date.textContent = lcdDate();
-  prefetchStats();                       // 稀有度的表先在背景抓，作答完就拿得到
+  // 11-17 結果頁不再顯示比例，進站不必再抓組合統計表（stats.js prefetchStats）
   startBackground();
 
   let manifest;
@@ -165,15 +161,12 @@ async function boot() {
       paperCaption: els.paperCaption,
       title: els.verdictTitle,
       tag: els.verdictTag,
-      line: els.verdictLine,
       actions: els.actions,
       igStory: els.igStory,
       faceAsk: els.faceAsk,
       igGuide: els.igGuide,
       restart: els.restart,
-      signup: els.signup,
-      email: els.email,
-      signupStatus: els.signupStatus,
+      lineOa: els.lineOa,
       saveover: els.saveover,
       saveoverImg: els.saveoverImg,
       saveoverClose: els.saveoverClose,
@@ -262,7 +255,8 @@ async function boot() {
       result.show(answers, picked, print, timing).catch((error) => {
         console.error("結果頁出錯", error);
         els.verdictTitle.textContent = "出圖失敗";
-        els.verdictLine.textContent = "重新整理再試一次。";
+        els.verdictTag.textContent = "重新整理再試一次。";
+        els.verdictTag.classList.add("is-on");
       });
     },
   }).start();

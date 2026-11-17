@@ -3,23 +3,27 @@
   display: none;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 8px;   /* 11-17 從 12 縮：手機第一屏要塞得下 LINE 好友鈕 */
   width: min(100%, 420px);
 }
 
 .result.is-on { display: flex; }
 
-/* 出片口：相紙從這裡被推出來。主角是圖，但**存圖鈕和 email 欄要在第一個畫面**。
+/* 出片口：相紙從這裡被推出來。主角是圖，但**分享鈕和 LINE 好友鈕都要在第一個畫面**。
 
-   09-29 Jimmy 在 IG 站內瀏覽器實測：相紙照寬度撐滿，底下的存圖鈕被切一半、
-   email 整個在畫面外。所以相紙寬度同時受「高度」限制：
-     相紙以下要留 --below（稀有度三行 + 存圖鈕 + email 列 + 間距 ≈ 260px），
-     相紙高度 ＝ (寬 − 18) × 1.25 + 39，反推寬度上限 ≈ 0.8 × 可用高度 − 221。
+   09-29 Jimmy 在 IG 站內瀏覽器實測：相紙照寬度撐滿，底下的按鈕被切掉。
+   11-17 Jimmy：LINE 好友鈕也要不用滑就看得到 → 相紙寬度同時受「高度」限制：
+     相紙以下要留 --below（換自拍連結＋大標＋英文短句＋分享句＋IG 鈕＋LINE 一行字＋LINE 鈕＋間距，
+     要跟底下 max-width:879px 那段的實際高度一起改），頁面上緣另外吃掉 --above（頁面留白＋出片口上緣）。
+     11-17 第三輪：比例那句拿掉、LINE 說明縮成一行，省下的高度一半還給相紙、一半拿去放大字和拉開兩組按鈕。
+     相紙高度 ＝ (寬 − 18) × 1.25 + 39，反推寬度上限 ＝ 0.8 × (可用高度 − 39) + 18。
    用 svh（工具列展開時的最小高度），IG／LINE 的上下兩條列才不會吃掉按鈕。
-   最窄 200px，再矮的螢幕寧可讓 email 滑一下，也不要圖小到看不清楚。 */
+   最窄 178px：剛好讓 iPhone SE 在 IG 裡也不用滑；再矮的螢幕寧可滑一下，圖不再縮。 */
 .slot {
+  --above: 30px;
+  --below: 284px;
   position: relative;
-  width: clamp(200px, calc(80svh - 221px), min(90vw, 390px));
+  width: clamp(178px, calc(.8 * (100svh - var(--above) - var(--below) - 39px) + 18px), min(90vw, 390px));
   overflow: hidden;
   padding-top: 8px;
 }
@@ -65,9 +69,8 @@
 /* 稀有度 */
 .verdict {
   text-align: center;
-  /* 大標題 + 比例那句 + 英文短句。先佔位，字打出來時整頁才不會往下跳。
-     104 是三行打完之後的實際高度，多留會把按鈕推出第一個畫面 */
-  min-height: 104px;
+  /* 大標題 + 英文短句（11-17 比例那句拿掉）。先佔位，字打出來時整頁才不會往下跳 */
+  min-height: 70px;
 }
 
 .verdict__title {
@@ -94,12 +97,6 @@
 .verdict__title.is-typed::after { display: none; }
 
 @keyframes caret { 50% { opacity: 0; } }
-
-.verdict__line {
-  margin: 0 0 8px;
-  font-size: 13.5px;
-  color: var(--muted);
-}
 
 /* 英文短句。它不報稀有度、只講態度，但它是這一頁視覺上最有個性的一行，
    所以給它拉丁字型、比中文那句重，並且用蓋章的方式出現。 */
@@ -207,8 +204,9 @@
 .actions__lead {
   margin: 0;
   text-align: center;
-  font-size: 13px;
-  color: var(--muted);
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--text);   /* 11-17 跟 LINE 那句同一個樣子，兩組按鈕看起來才是並列的兩件事 */
 }
 .btn--primary.btn--ig {
   background: #15161a;
@@ -305,72 +303,34 @@
   .igguide, .igguide.is-leaving { animation: none; }
 }
 
-/* email 區。頁面不寫折扣誘因，只說會寄什麼。 */
-.signup { width: 100%; }
-
-.signup__row {
+/* 11-13 結果頁主推加 LINE 好友。跟 IG 鈕一樣白底黑字（09-30 Jimmy：品牌色太搶），只有圖示是 LINE 綠 */
+.lineoa {
+  width: 100%;
   display: flex;
-  gap: 8px;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;   /* 跟上面的 IG 鈕分開，看得出是另一件事 */
 }
-
-.signup__input {
-  flex: 1 1 auto;
-  min-width: 0;
-  min-height: 44px;
-  padding: 10px 16px;
-  border: 1px solid var(--hairline);
-  border-radius: var(--radius-pill);
-  background: rgba(255, 255, 255, .8);
+.lineoa__lead {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.45;
   color: var(--text);
-  font: inherit;
-  font-size: 14px;
+  text-align: center;
 }
-
-.signup__input::placeholder { color: var(--muted); }
-.signup__input:focus {
-  outline: none;
-  border-color: #1f2430;
-  background: #fff;
+.btn--line {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  background: rgba(255, 255, 255, .86);
+  border-color: var(--hairline);
+  color: var(--text);
+  text-decoration: none;
 }
-
-.signup__submit {
-  flex: 0 0 auto;
-  padding: 10px 20px;
-}
-
-.signup__note {
-  margin: 8px 2px 0;
-  font-size: 12px;
-  line-height: 1.65;
-  color: var(--muted);
-  text-align: left;
-}
-
-.signup__status {
-  margin: 6px 2px 0;
-  font-size: 12.5px;
-  min-height: 18px;
-}
-
-.signup__status[data-tone="error"] { color: #b3261e; }
-.signup__status[data-tone="ok"] { color: #c3357f; }
-
-.signup.is-done .signup__row { display: none; }
-
-/* 填完 email 之後才出現的上市預告（10-02 Jimmy） */
-.signup__launch {
-  display: none;
-  margin: 4px 2px 0;
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: .02em;
-  color: var(--ink, #14161a);
-}
-.signup.is-done .signup__launch { display: block; }
-/* 送出後只剩兩行字，跟上面的標題、分享鈕一樣置中（10-02 盲測：靠左看起來沒對齊） */
-.signup.is-done .signup__status,
-.signup.is-done .signup__launch { text-align: center; }
-
+.btn--line svg { width: 20px; height: 20px; }
 .restart {
   margin: 0 auto;
   padding: 6px 4px;
@@ -506,12 +466,10 @@
 /* 結果頁減法（09-30 Jimmy 覺得太花，看過 demo 後定案）。
    1.「My SPOTIME」大標留著；英文短句放大排在它下面，比例那句降成小字
    2.「換成我的自拍」從相片上拿下來，改成相紙下面一行小字連結，不蓋住照片
-   3. email 說明縮成一行
    背景網點與光暈不調淡（Jimmy 要留） */
 .verdict { display: grid; gap: 4px; justify-items: center; }
 .verdict__title { margin-bottom: 2px; }
 .verdict__tag { order: 1; font-size: clamp(18px, 5vw, 21px); }
-.verdict__line { order: 2; margin: 0; font-size: 12.5px; }
 /* 放在 .verdict 最上面（不放在 .slot 裡：slot 會裁掉相紙的陰影，裁出一塊灰框） */
 .verdict .selfie-cta {
   order: -1;
@@ -527,7 +485,6 @@
   text-decoration: underline;
   text-underline-offset: 3px;
 }
-.signup__note { font-size: 11.5px; }
 
 /* 從「換成我的自拍」修完回來：IG 鈕輕輕跳兩下，告訴人下一步在這（result.js 的 is-nudge） */
 .btn--ig.is-nudge { animation: ig-nudge 1.4s 300ms var(--ease-out) 2; }
@@ -537,3 +494,14 @@
   40%           { transform: translateY(0) scale(.99); }
 }
 @media (prefers-reduced-motion: reduce) { .btn--ig.is-nudge { animation: none; } }
+
+/* 11-17 Jimmy：手機第一屏要看得到 LINE 好友鈕。相紙以下每一行都收一點，
+   省下來的高度讓給相紙（.slot 的 --below 要跟著這裡的實際高度改） */
+@media (max-width: 879px) {
+  .verdict { gap: 2px; min-height: 92px; }   /* 打完字的實際高度，先佔位，字出來時按鈕才不會往下跳 */
+  .verdict .selfie-cta { min-height: 28px; margin: 0; padding: 2px 8px; }
+  .verdict__title { margin: 0; font-size: clamp(26px, 7vw, 30px); line-height: 1.15; }
+  .verdict__tag { font-size: clamp(17px, 4.6vw, 19px); }
+  .actions { gap: 6px; }
+  .lineoa { margin-top: 10px; gap: 6px; }   /* 兩組按鈕之間比組內寬，看得出是兩件事 */
+}

@@ -172,6 +172,10 @@ export const PICK_BEAT_MS = 150;   // 09-30 二測：200＋換題 150 剛好卡�
    本機 127.0.0.1 沒有 /api，要測送出請用測試站。 */
 export const API_ENDPOINT = "/api";
 
+/** 結果頁「加入 LINE 好友」的連結（11-13 從 LINE OA 後台「加入好友 → 網址」複製）。
+   index.html 的 href 也寫了同一條，JS 沒跑起來按鈕照樣能用；改的話兩邊一起改。 */
+export const LINE_OA_URL = "https://lin.ee/Rq1aiDE";
+
 /** 稀有度要不要讀真實資料。
    true＝每次出結果都問後端「這個組合有幾人」，但**累計不到 300 筆時
    rarity.js 還是會用估計值**，過了 300 才自動換成真實比例，不用再回來改。

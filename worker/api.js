@@ -139,7 +139,7 @@ async function sendWithRetry(env, body, type, fetcher) {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body,
-        // Apps Script 先把資料寫進試算表才回 302，拿到 302 就算成功（見 signup.js 09-29 的說明）
+        // Apps Script 先把資料寫進試算表才回 302，拿到 302 就算成功（09-29 實測）
         redirect: "manual",
         signal: AbortSignal.timeout(TIMEOUT_MS),
       });

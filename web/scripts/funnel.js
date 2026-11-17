@@ -21,6 +21,7 @@ export const FUNNEL_STEPS = Object.freeze([
   "result",    // 看到結果頁
   "share",     // 按「發到 IG 限時動態」
   "signup",    // email 送出成功
+  "line",      // 按「加入 LINE 好友」（11-13 加。只知道有按，加沒加成功要看 LINE OA 後台）
 ]);
 
 const SEEN_KEY = "spotime.funnel";

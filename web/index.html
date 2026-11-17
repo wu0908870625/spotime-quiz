@@ -163,7 +163,6 @@
         <span class="selfie-cta__label">換成我的自拍</span>
       </button>
       <h1 class="verdict__title" id="verdict-title"></h1>
-      <p class="verdict__line" id="verdict-line"></p>
       <p class="verdict__tag" id="verdict-tag"></p>
     </div>
 
@@ -184,17 +183,15 @@
         </div>
       </div>
 
-      <form class="signup" id="signup" novalidate>
-        <div class="signup__row">
-          <input class="signup__input" id="email" type="email" inputmode="email"
-                 autocomplete="email" placeholder="你的 email" aria-label="你的 email">
-          <button class="btn btn--ghost signup__submit" type="submit">送出</button>
-        </div>
-        <p class="signup__status" id="signup-status" role="status"></p>
-        <!-- 10-02 Jimmy：填完 email 才出現。只寫上市日，不寫折扣 -->
-        <p class="signup__launch">SPOTIME 商品預計於 12/1 開始販售，敬請期待</p>
-        <p class="signup__note">不定期發送 SPOTIME 新品與優惠消息，隨時可取消。</p>
-      </form>
+      <!-- 11-13 Jimmy：結果頁主推加 LINE 好友。11-17 Jimmy：email 拿掉、改文案、手機第一屏就要看到這顆鈕；同日第三輪：比例那句拿掉、說明縮成一行。
+           連結是 LINE OA 後台「加入好友 → 網址」那條，寫在 scripts/config.js 的 LINE_OA_URL -->
+      <div class="lineoa" id="lineoa">
+        <p class="lineoa__lead">加入 LINE 好友第一時間收到開賣消息！</p>
+        <a class="btn btn--line" id="line-oa" href="https://lin.ee/Rq1aiDE" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#06C755" d="M12 3C6.48 3 2 6.63 2 11.1c0 4 3.55 7.36 8.35 8 .33.07.77.22.88.5.1.25.07.65.03.9l-.14.85c-.04.25-.2.98.86.53 1.06-.45 5.73-3.37 7.82-5.78C21.24 14.5 22 12.9 22 11.1 22 6.63 17.52 3 12 3Z"/><path fill="#fff" d="M8.9 13.4H7.1a.4.4 0 0 1-.4-.4V9.4c0-.22.18-.4.4-.4s.4.18.4.4v3.2h1.4c.22 0 .4.18.4.4s-.18.4-.4.4Zm1.4-.4a.4.4 0 0 1-.8 0V9.4a.4.4 0 0 1 .8 0V13Zm4 0a.4.4 0 0 1-.72.24L11.8 10.6V13a.4.4 0 0 1-.8 0V9.4a.4.4 0 0 1 .72-.24l1.78 2.42V9.4a.4.4 0 0 1 .8 0V13Zm2.9-2.2a.4.4 0 0 1 0 .8h-1.4v.8h1.4a.4.4 0 0 1 0 .8h-1.8a.4.4 0 0 1-.4-.4V9.4c0-.22.18-.4.4-.4h1.8a.4.4 0 0 1 0 .8h-1.4v.8h1.4Z"/></svg>
+          <span class="btn__label">加入 SPOTIMELAB LINE 好友</span>
+        </a>
+      </div>
 
       <button class="restart" id="restart" type="button">換個答案再測一次</button>
     </div>

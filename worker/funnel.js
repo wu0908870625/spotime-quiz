@@ -3,7 +3,7 @@
 
 /** 要跟 web/scripts/funnel.js、backend/Code.gs 的 FUNNEL_STEPS 一樣（tests/funnel.test.mjs 會檢查） */
 export const FUNNEL_STEPS = Object.freeze([
-  "open", "ready", "start", "selfie", "q1", "q2", "q3", "q4", "q5", "result", "share", "signup",
+  "open", "ready", "start", "selfie", "q1", "q2", "q3", "q4", "q5", "result", "share", "signup", "line",
 ]);
 
 /** 計數存在哪一個 Durable Object。要整個歸零就換一個名字，舊的那個不會再被讀到。

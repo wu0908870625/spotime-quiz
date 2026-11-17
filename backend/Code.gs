@@ -61,7 +61,7 @@ const TIME_FORMAT = 'yyyy/MM/dd HH:mm';   // 作答結果的時間欄。不設�
 const FUNNEL_STEPS = [
   ['open', '進站'], ['ready', '讀取完成'], ['start', '開始作答'], ['selfie', '選自拍'],
   ['q1', 'Q1 心情'], ['q2', 'Q2 造型'], ['q3', 'Q3 場景'], ['q4', 'Q4 位置'], ['q5', 'Q5 熟悉度'],
-  ['result', '看到結果'], ['share', '按 IG 限動'], ['signup', '留 email'],
+  ['result', '看到結果'], ['share', '按 IG 限動'], ['signup', '留 email'], ['line', '按 LINE 好友'],
 ];
 const FUNNEL_HEADER = ['日期', '站別'].concat(FUNNEL_STEPS.map(function (s) { return s[1]; })).concat(['更新時間']);
 const FUNNEL_SITES = ['正式站', '測試站'];
@@ -256,6 +256,15 @@ function funnelTab_() {
     sheet.getRange('A:A').setNumberFormat('@');
     sheet.appendRow(FUNNEL_HEADER);
     sheet.setFrozenRows(1);
+  }
+  // 11-13 加了「按 LINE 好友」一欄。舊分頁的「更新時間」在它現在要放的位置，
+  // 直接蓋表頭的話，舊列的更新時間會被讀成 LINE 人數 → 先在「更新時間」前面插一整欄空的，舊列跟著往右挪
+  const width = Math.max(sheet.getLastColumn(), 1);
+  const header = sheet.getRange(1, 1, 1, width).getValues()[0].map(String);
+  if (header.indexOf('按 LINE 好友') === -1) {
+    const at = header.indexOf('更新時間');
+    if (at !== -1) sheet.insertColumnBefore(at + 1);
+    sheet.getRange(1, 1, 1, FUNNEL_HEADER.length).setValues([FUNNEL_HEADER]);
   }
   return sheet;
 }

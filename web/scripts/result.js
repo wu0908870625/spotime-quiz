@@ -1,15 +1,14 @@
-/** 結果頁：出片 → 分享鈕與 email 滑上來 → 打字機講稀有度（等後端，不擋前面）。 */
+/** 結果頁：出片 → 分享鈕與 LINE 好友鈕滑上來 → 打字機講稀有度（等後端，不擋前面）。 */
 import { RESULT_TITLE } from "./config.js";
 import { comboKey as keyOf, comboLabel, verdict } from "./rarity.js";
 import { renderResult } from "./render.js";
 import { createSaver } from "./save.js";
 import { createStoryShare } from "./igstory.js";
-import { createSignup } from "./signup.js";
+import { createLineOa } from "./line-oa.js";
 import { renderStory } from "./story.js";
-import { spinLine } from "./fx.js";
 import { readContext } from "./context.js";
 import { track } from "./funnel.js";
-import { answerPayload, fetchStats, logAnswer } from "./stats.js";
+import { logAnswer } from "./stats.js";
 
 const TYPE_SPEED_MS = 70;
 const AFTER_PAPER_MS = 820;
@@ -21,16 +20,11 @@ export function createResult({ manifest, els, onRestart }) {
     closeBtn: els.saveoverClose,
     behind: els.page,
   });
-  const signup = createSignup({
-    form: els.signup,
-    input: els.email,
-    status: els.signupStatus,
-    onSubmitted: () => {},
-  });
+  createLineOa({ link: els.lineOa });
 
   const visit = readContext();
 
-  // 按鈕的監聽只掛一次。掛在 show() 裡的話，再測一次就會存兩張圖、送兩筆 email。
+  // 按鈕的監聽只掛一次。掛在 show() 裡的話，再測一次就會存兩張圖。
   // 9:16 的限動圖在背景畫，按下去時還沒好就等它一下。
   let current = null;
   let shown = null;              // 目前結果頁的答案，自拍流程要用
@@ -100,8 +94,8 @@ export function createResult({ manifest, els, onRestart }) {
     if (print) await print.eject(url, caption).catch((error) => console.error("出片動畫出錯", error));
     present(photo, caption, { story: false, url });
 
-    // 稀有度要等後端（最久 STATS_TIMEOUT_MS），先發出去，不擋畫面
-    const pending = fetchStats(comboKey).then((stats) => verdict(stats, comboKey, Date.now(), answers.mood));
+    // 11-17 Jimmy：「XX% 的人跟你有相同選擇」拿掉，只留英文短句，所以不用再等後端的統計表
+    const { tag } = verdict(null, comboKey, Date.now(), answers.mood);
 
     els.quiz.classList.add("is-off");
     els.result.classList.add("is-on");
@@ -111,7 +105,6 @@ export function createResult({ manifest, els, onRestart }) {
     } else {
       els.paper.classList.add("is-out");
     }
-    els.line.textContent = "";
     els.tag.textContent = "";
     els.tag.classList.remove("is-on");
 
@@ -119,20 +112,18 @@ export function createResult({ manifest, els, onRestart }) {
     current = storyOf(photo, caption);
 
     track("result");
-    signup.use(answerPayload(comboKey, answers, visit));
     logAnswer(comboKey, answers, visit, timing.seconds ?? null);
 
     await sleep(AFTER_PAPER_MS);
-    // 分享鈕和 email 先出來，不必等稀有度
+    // 分享鈕和 LINE 鈕先出來，不必等稀有度
     els.actions.classList.add("is-on");
     // 結果頁是成果展示：已經用自拍的人位置在作答時就校正好了，不再放調整鈕。
     // 只有用預設合照的人，才留「換成我的自拍」
     els.selfieOpen.hidden = Boolean(selfie);
 
-    // 大標題固定，會變的是比例那句與英文短句——英文短句是「蓋章」的那一下
-    const [{ line, tag }] = await Promise.all([pending, type(els.title, RESULT_TITLE)]);
+    // 大標題固定，會變的是英文短句——它是「蓋章」的那一下
+    await type(els.title, RESULT_TITLE);
     els.title.classList.add("is-typed");
-    spinLine(els.line, line);
     els.tag.textContent = tag;
     els.tag.classList.add("is-on");
   }
